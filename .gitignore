@@ -1,0 +1,19 @@
+# Node.js / Nuxt
+**/node_modules/
+**/.nuxt/
+**/.output/
+**/dist/
+**/.env*
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Backend
+backend/extracted/
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/

@@ -1,0 +1,26 @@
+{
+  "name": "backend",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "adm-zip": "^0.5.15",
+    "axios": "^1.7.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "nuxt": "^3.17.5",
+    "oracledb": "^6.5.1",
+    "rbush": "^4.0.1",
+    "supercluster": "^8.0.1",
+    "xml2js": "^0.6.2",
+    "xmldom": "^0.6.0"
+  }
+}

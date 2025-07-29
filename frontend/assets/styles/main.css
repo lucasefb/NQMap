@@ -1,0 +1,51 @@
+html, body{
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Roboto', sans-serif;
+}
+
+.main-container {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+}
+
+.map-container {
+  height: 100%;
+  width: 100%;
+}
+
+h3 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.2em;
+}
+
+nav ul {
+  display: flex;
+  list-style: none;
+  padding: 0;
+}
+
+nav ul li {
+  margin-right: 1rem;
+}
+
+nav ul li a {
+  color: #fff;
+  text-decoration: none;
+}
+
+nav ul li a:hover {
+  text-decoration: underline;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+
+}
