@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.APP_ENV === 'prod' ? process.env.API_BASE_URL_PROD : process.env.API_BASE_URL_LOCAL;
+// Base de la API para peticiones al backend
+// Nuxt expone API_BASE_URL a ambos entornos vía nuxt.config.js
+const API_BASE_URL = process.env.API_BASE_URL || '';
 
 export default {
   async loadKMZ() {
@@ -19,7 +21,8 @@ export default {
         console.log(`📂 Solicitando KMZ: ${filename}`);
 
         try {
-          const response = await this.$axios.get(`${API_BASE_URL}/api/get-kmz/${filename}`);
+          // Usamos sólo la ruta relativa, axios añadirá baseURL configurado en nuxt.config.js
+        const response = await this.$axios.get(`/api/get-kmz/${filename}`);
           const parser = new DOMParser();
           const kmlXml = parser.parseFromString(response.data.kml, 'text/xml');
           const groundoverlays = kmlXml.getElementsByTagName('GroundOverlay');
