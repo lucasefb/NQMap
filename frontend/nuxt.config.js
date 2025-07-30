@@ -66,3 +66,4 @@ export default {
     APP_ENV: env
   }
 }
+ 

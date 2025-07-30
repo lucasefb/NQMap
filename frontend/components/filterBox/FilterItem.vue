@@ -1,6 +1,14 @@
 <template>
     <label class="filter-label">
-        <input type="checkbox" name="checkbox-filter":checked="checked" @change="$emit('update', $event.target.checked)" />
+        <input type="checkbox"
+      v-if="checked !== undefined"
+      :checked="checked"
+      @change="$emit('update', $event.target.checked)"
+    />
+    <input type="checkbox"
+      v-else
+      v-model="model"
+    />
         <span class="checkmark"></span>
         <slot></slot>
     </label>
@@ -8,12 +16,21 @@
 
 <script>
 export default {
-    props: {
-        checked: {
-            type: Boolean,
-            required: true
-        }
+  props: {
+    value: Boolean,
+    checked: Boolean
+  },
+  computed: {
+    model: {
+      get() {
+        return this.value !== undefined ? this.value : this.checked;
+      },
+      set(val) {
+        this.$emit('update', val);
+        this.$emit('input', val);
+      }
     }
+  }
 }
 </script>
 

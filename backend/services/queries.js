@@ -113,5 +113,36 @@ export const queries = {
     select CELL_NAME, BANDA, LOAD_LTE, DESBALANCEO_LTE, DL_PRB_UTILIZATION 
     from smart.tablero_checkpoint_4g_med_cell_week 
     where FECHA = (select MAX(FECHA) from smart.tablero_checkpoint_4g_med_cell_week)
+  `,
+
+  /* Reclamos */
+  loadReclamosCalidad: `
+    SELECT
+      ID,
+      ESTADO,
+      RECLAMANTE,
+      LATITUD,
+      LONGITUD,
+      FECHA_CREACION,
+      FECHA_RECLAMO,
+      NOMBRE_REFERENCIAL,
+      TIPO_RECLAMO,
+      DESCRIPCION
+    FROM reclamos_calidad_registros
+  `,
+
+  loadReclamosAcciones: `
+    SELECT
+      ID_RECLAMO,
+      FECHA_CREACION,
+      INGENIERO,
+      ESTADO,
+      TIPO_TAREA,
+      SITIO,
+      BANDA,
+      DESCRIPCION,
+      FECHA_EJECUCION,
+      FECHA_CIERRE
+    FROM reclamos_calidad_acciones
   `
 };

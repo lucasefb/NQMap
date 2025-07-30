@@ -96,3 +96,4 @@ export default {
     this.previousZoom = this.zoom;
   }
 };
+ 

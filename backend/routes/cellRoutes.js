@@ -5,6 +5,7 @@ import { getKmzData } from '../services/kmzService.js';
 
 const router = express.Router();
 
+// Nuevo: Middleware por tipo de dato
 const ensureCache = async (req, res, next) => {
   if (!cachedData.lastUpdated) {
     await updateCache();
@@ -12,12 +13,14 @@ const ensureCache = async (req, res, next) => {
   next();
 };
 
-router.get('/coordinatesOfOneCell', async (req, res) => {
+router.get('/coordinatesOfOneCell', ensureCache, async (req, res) => {
   try {
     const query = req.query.query?.toString().trim().toUpperCase();
 
     if (!query) { return res.status(400).json({ error: 'Falta el parámetro "query"' }); }
-    if (!cachedData.cellsByNombre) { await updateCache(); }
+    if (!cachedData.cellsByNombre) {
+      return res.status(503).json({ error: 'Cache no listo, intente nuevamente.' });
+    }
     const cell = cachedData.cellsByNombre[query];
 
     if (!cell) {
@@ -101,14 +104,26 @@ router.get('/cellsByBounds', ensureCache, (req, res) => {
     });
 
 
-    res.json(allClusters);
+    // Forzar estructura GeoJSON para todos los elementos
+    const geojsonFeatures = allClusters.map(item => {
+      if (item && item.type === 'Feature' && item.geometry && item.properties) return item;
+      if (item && item.lat !== undefined && item.lng !== undefined) {
+        return {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [item.lng, item.lat] },
+          properties: { ...item }
+        };
+      }
+      return item;
+    });
+    res.json(geojsonFeatures);
   } catch (err) {
     console.error('Error in /cellsByBounds:', err);
     res.status(500).json({ error: 'Error processing clusters' });
   }
 });
 
-router.post('/bandsByBounds', (req, res) => {
+router.post('/bandsByBounds', ensureCache, (req, res) => {
   const { zoom, bounds, techFilters, bandasFilters, solutions, loadCellsWithBigPRB } = req.body;
 
   try {
@@ -151,6 +166,15 @@ router.get('/preorigin', ensureCache, (req, res) => {
   }
 });
 
+router.get('/reclamos', ensureCache, (req, res) => {
+  try {
+    res.json({ reclamos: cachedData.reclamosNormalizados || [] });
+  } catch (err) {
+    console.error('Error en /reclamos:', err);
+    res.status(500).json({ error: 'Error al obtener reclamos' });
+  }
+});
+
 router.get('/planesrf', ensureCache, (req, res) => {
   try {
     const planesFilter = req.query.planes;
@@ -179,7 +203,6 @@ router.get('/get-kmz/:filename', async (req, res) => {
     const data = getKmzData(filename);
 
     if (!data) {
-      console.warn(`Archivo KMZ no encontrado en caché: ${filename}`);
       return res.status(404).json({ error: 'Archivo no encontrado' });
     }
 
@@ -187,6 +210,77 @@ router.get('/get-kmz/:filename', async (req, res) => {
   } catch (err) {
     console.error('Error al obtener KMZ:', err);
     res.status(500).json({ error: 'Error interno al leer KMZ' });
+  }
+});
+
+// --- NUEVO: Endpoint para reclamos ---
+router.get('/reclamosByBounds', async (req, res) => {
+  try {
+    const { neLat, neLng, swLat, swLng, tipos } = req.query;
+    // Usar reclamosCalidad crudos, no normalizados
+    let reclamos = cachedData.reclamosCalidad || [];
+    // Filtrar por bounds
+    const reclamosFiltrados = reclamos.filter(r => {
+      const lat = parseFloat((r[3] || '').toString().replace(',', '.'));
+      const lng = parseFloat((r[4] || '').toString().replace(',', '.'));
+      return (
+        !isNaN(lat) && !isNaN(lng) &&
+        lat >= parseFloat(swLat) && lat <= parseFloat(neLat) &&
+        lng >= parseFloat(swLng) && lng <= parseFloat(neLng)
+      );
+    });
+    // Filtrar por tipo si corresponde
+    let tiposArr = [];
+    if (tipos) {
+      tiposArr = tipos.split(',').map(t => t.trim().toUpperCase());
+    }
+    const reclamosTipo = tiposArr.length > 0
+      ? reclamosFiltrados.filter(r => tiposArr.includes((r[8] || '').toUpperCase()))
+      : reclamosFiltrados;
+    // Devolver como features GeoJSON
+    // Armar mapa de acciones por ID para lookup rápido
+    const accionesRaw = cachedData.reclamosAcciones || [];
+    const accionesPorReclamo = {};
+    for (const row of accionesRaw) {
+      const id = String(row[0]).trim();
+      if (!accionesPorReclamo[id]) accionesPorReclamo[id] = [];
+      accionesPorReclamo[id].push({
+        tipo_tarea: row[4],
+        estado: row[3],
+        descripcion: row[7]
+      });
+    }
+
+    const features = reclamosTipo.map(r => {
+      const lat = parseFloat((r[3] || '').toString().replace(',', '.'));
+      const lng = parseFloat((r[4] || '').toString().replace(',', '.'));
+      const idStr = String(r[0]).trim();
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [lng, lat]
+        },
+        properties: {
+          ID: r[0],
+          ESTADO: r[1],
+          RECLAMANTE: r[2],
+          LATITUD: lat,
+          LONGITUD: lng,
+          FECHA_CREACION: r[5],
+          FECHA_RECLAMO: r[6],
+          NOMBRE_REFERENCIAL: r[7],
+          TIPO_RECLAMO: r[8],
+          DESCRIPCION: r[9],
+          tipo_reclamo: r[8],
+          acciones: accionesPorReclamo[idStr] || []
+        }
+      };
+    });
+    res.json(features);
+  } catch (err) {
+    console.error('Error en /reclamosByBounds:', err);
+    res.status(500).json({ error: 'Error obteniendo reclamos por bounds' });
   }
 });
 
