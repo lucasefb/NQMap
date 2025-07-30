@@ -103,6 +103,49 @@ export function buildSupercluster(allCellsAllInfo) {
   return clustersBySolution;
 }
 
+/**
+ * Genera clusters y rtree para reclamos normalizados por tipo (CORPO, VIP, etc)
+ * @param {Array} reclamosNormalizados
+ * @returns {Object} clustersByTipoReclamo
+ */
+export function buildReclamosSupercluster(reclamosNormalizados) {
+  const tipoMap = {};
+  const rtrees = {};
+
+  reclamosNormalizados.forEach(reclamo => {
+    const tipo = (reclamo.tipo || reclamo.TIPO_RECLAMO || '').replace(/\s+/g, '_').toUpperCase();
+    if (!tipo) return;
+    if (!tipoMap[tipo]) {
+      tipoMap[tipo] = [];
+      rtrees[tipo] = new RBush();
+    }
+    // El punto debe contener toda la info del reclamo para acceso rápido
+    const point = {
+      minX: reclamo.lng,
+      minY: reclamo.lat,
+      maxX: reclamo.lng,
+      maxY: reclamo.lat,
+      ...reclamo // copia todos los campos útiles
+    };
+    tipoMap[tipo].push(point);
+    rtrees[tipo].insert(point);
+  });
+
+  const clustersByTipo = {};
+  Object.entries(tipoMap).forEach(([tipo, features]) => {
+    const supercluster = new Supercluster({ radius: 120, maxZoom: 13 });
+    // Hasta zoom 13 se generan clusters, del 14 en adelante se muestran los puntos individuales
+    const geojson = features.map(f => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [f.lng, f.lat] },
+      properties: { cluster: false, ...f }
+    }));
+    supercluster.load(geojson);
+    clustersByTipo[tipo] = { supercluster, rtree: rtrees[tipo] };
+  });
+  return clustersByTipo;
+}
+
 export function getCellsByBoundsAndBands({
   zoom,
   bounds,

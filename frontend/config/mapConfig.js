@@ -135,3 +135,4 @@ export const DEFAULT_CONFIG = {
   isLoading: false,
   loadCellsWithBigPRB: false,
 }
+ 

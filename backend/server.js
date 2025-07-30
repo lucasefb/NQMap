@@ -72,3 +72,4 @@ app.get('/api/get-kmz/:filename', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Backend corriendo en http://localhost:${PORT} [env: ${env}]`);
 });
+ 

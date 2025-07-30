@@ -31,113 +31,105 @@ export default {
       default: null
     }
   },
+  watch: {
+    markers: {
+      handler(newMarkers) {
+        console.log('[BandsSimpleCanvas] markers changed:', newMarkers.length, newMarkers.slice(0, 2));
+        if (this.canvasLayer && this.shouldRender) {
+          this.canvasLayer.setBands(newMarkers);
+          this.canvasLayer._redraw();
+        }
+      }
+    }
+  },
   data() {
     return {
       canvasLayer: null,
       isInitialized: false
     };
   },
-  
   computed: {
     shouldRender() {
+      console.log('[BandsSimpleCanvas] shouldRender changed:', this.zoom >= 14 && this.markers.length > 0, 'zoom:', this.zoom, 'markers:', this.markers.length);
       return this.zoom >= 14 && this.markers.length > 0;
     }
   },
-  
+  mounted() {
+    console.log('[BandsSimpleCanvas] mounted, props:', {
+      markers: this.markers,
+      zoom: this.zoom,
+      mapInstance: !!this.mapInstance
+    });
+  },
   watch: {
-    // Observamos todos los cambios relevantes
     shouldRender(newVal) {
-      if (newVal && this.mapInstance && !this.isInitialized) {
-        this.initialize();
+      console.log('[BandsSimpleCanvas] shouldRender changed:', newVal, 'zoom:', this.zoom, 'markers:', this.markers.length);
+      if (newVal && this.mapInstance) {
+        if (this.isInitialized && this.canvasLayer) {
+          this.canvasLayer.setBands(this.markers);
+          this.canvasLayer.options.loadCellsWithBigPRB = this.loadCellsWithBigPRB;
+          this.canvasLayer._redraw();
+        } else {
+          console.log('[BandsSimpleCanvas] Initializing canvas layer with markers:', this.markers.length, this.markers.slice(0,2));
+          this.initialize();
+        }
       } else if (!newVal && this.canvasLayer) {
         this.removeLayer();
+        this.isInitialized = false;
       }
     },
-    
     markers(newMarkers) {
       if (this.canvasLayer && newMarkers) {
-        console.log(`[SimpleCanvas] Actualizando ${newMarkers.length} bandas`);
         this.canvasLayer.setBands(newMarkers);
       }
     },
-    
     loadCellsWithBigPRB(newValue) {
-      if (this.canvasLayer) {
+      if (this.canvasLayer && this.shouldRender) {
         this.canvasLayer.options.loadCellsWithBigPRB = newValue;
         this.canvasLayer._redraw();
       }
     }
   },
-  
   methods: {
     async initialize() {
-      // Solo inicializamos una vez
+  console.log('[BandsSimpleCanvas] initialize() called');
       if (this.isInitialized || !process.client) return;
-      
-      // Verificamos que tengamos todo lo necesario
       if (!window.L || !this.mapInstance) {
-        console.log('[SimpleCanvas] Esperando Leaflet o mapInstance...');
         setTimeout(() => this.initialize(), 100);
         return;
       }
-      
       try {
-        console.log('[SimpleCanvas] Inicializando capa de canvas...');
-        
-        // Importamos y creamos la capa
         const { createBandsCanvasLayer } = await import('../methods/BandsCanvasLayer.js');
         const BandsCanvasLayerClass = createBandsCanvasLayer();
-        
-        if (!BandsCanvasLayerClass) {
-          console.error('[SimpleCanvas] Error creando la clase');
-          return;
-        }
-        
-        // Creamos la instancia
+        if (!BandsCanvasLayerClass) return;
         this.canvasLayer = new BandsCanvasLayerClass({
           loadCellsWithBigPRB: this.loadCellsWithBigPRB
         });
-        
-        // Eventos
         this.canvasLayer.on('bandover', (e) => {
           if (this.$refs.tooltipRef) {
             this.$refs.tooltipRef.showTooltip(e.band);
           }
         });
-        
         this.canvasLayer.on('bandout', () => {
           if (this.$refs.tooltipRef) {
             this.$refs.tooltipRef.hideTooltip();
           }
         });
-        
-        // Agregamos al mapa
         this.mapInstance.addLayer(this.canvasLayer);
-        
-        // Establecemos los marcadores iniciales
         if (this.markers.length > 0) {
           this.canvasLayer.setBands(this.markers);
         }
-        
         this.isInitialized = true;
-        console.log('[SimpleCanvas] Inicialización completa');
-        
       } catch (error) {
-        console.error('[SimpleCanvas] Error:', error);
+        // Silenciar error
       }
     },
-    
     removeLayer() {
-      // Elimina la capa y reinicia flags para permitir futura re-creación
       if (this.canvasLayer && this.mapInstance && this.mapInstance.hasLayer(this.canvasLayer)) {
         this.mapInstance.removeLayer(this.canvasLayer);
       }
-      // Limpieza de referencias y flags
-      this.canvasLayer = null;
-      this.isInitialized = false;
     }
   },
-  
   beforeDestroy() {
     this.removeLayer();
     this.canvasLayer = null;

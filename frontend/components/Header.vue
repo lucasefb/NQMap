@@ -29,8 +29,6 @@
 
 <script>
 import debounce from 'lodash.debounce';
-
-// URL base del backend (definida en nuxt.config según APP_ENV)
 const API_BASE_URL = process.env.API_BASE_URL;
 
 export default {
@@ -76,6 +74,9 @@ export default {
         const response = await this.$axios.get(`${API_BASE_URL}/api/coordinatesOfOneCell?query=${encodeURIComponent(this.searchQuery)}`);
         if (response.data && Array.isArray(response.data) && response.data.length > 0) {
           const { LATITUD, LONGITUD } = response.data[0];
+          // Emitir marcador rojo para sitio buscado
+          this.markerForLatitudLongitudSearch = { lat: LATITUD, lng: LONGITUD };
+          this.$emit('updateMarkerForLatitudLongitudSearch', this.markerForLatitudLongitudSearch);
           this.mapInstance.setView([LATITUD, LONGITUD], 15);
         } else {
           console.error('No se encontraron coordenadas o el formato de datos es incorrecto.');
@@ -126,6 +127,7 @@ export default {
       this.markerForLatitudLongitudSearch = { lat: 0, lng: 0 }; // Elimina el marcador
       this.$emit('updateMarkerForLatitudLongitudSearch', this.markerForLatitudLongitudSearch);
       this.searchQueryCoordinates = ''; // Limpia el input de coordenadas
+      this.searchQuery = ''; // Limpia el input de sitio
     },
   },
   created() {

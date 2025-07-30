@@ -124,3 +124,4 @@ export async function updateKmzCache(extractedBasePath) {
 export function getKmzData(filename) {
   return cachedKmzData[filename];
 }
+ 

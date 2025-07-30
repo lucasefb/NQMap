@@ -1,8 +1,5 @@
-// `nuxt.config.js` expone la variable `API_BASE_URL` según el APP_ENV.
-// De este modo evitamos que en el bundle del cliente falten variables y provoquen
-// URLs del tipo `undefined/api/...`.
 const API_BASE_URL = process.env.API_BASE_URL;
-
+ 
 export default {
   async fetchMarkers() {
     if (!this.mapInstance) {
@@ -29,6 +26,7 @@ export default {
       };
       const response = await this.$axios.$get('/api/cellsByBounds', { params });
 
+
       const normalizedMarkers = response.map(item => {
         if (!item?.geometry?.coordinates || !item?.properties) return null;
 
@@ -54,6 +52,7 @@ export default {
           };
         }
       }).filter(Boolean);
+      console.log('[CLUSTER-DEBUG] Markers normalizados:', normalizedMarkers.slice(0,5));
 
       // --- Chequeo de duplicados en markers normalizados ---
       const keySet = new Set();
@@ -79,9 +78,13 @@ export default {
           const dups = normalizedMarkers.filter(m => (m.isCluster ? `cluster_${m.cluster_id}_${m.solution}` : `site_${m.nombre}_${m.lat}_${m.lng}_${m.solution}`) === dup.key);
           console.warn(`[FetchMarkers] Objetos duplicados para key '${dup.key}':`, dups);
         });
+      } else {
+        console.log('[CLUSTER-DEBUG] No se detectaron claves duplicadas en markers normalizados.');
       }
       this.markersForAllCells = [];
       this.markersForAllCells = normalizedMarkers;
+      console.log('[CLUSTER-DEBUG] markersForAllCells FINAL:', this.markersForAllCells.length);
+
     } catch (error) {
       console.error('Error fetching clustered markers:', error);
     }
@@ -150,20 +153,15 @@ export default {
   },
 
   async fetchPreOriginMarkers() {
-    
     const activeTypes = Object.entries(this.filterForPreOrigin)
       .filter(([_, isActive]) => isActive)
       .map(([key]) => key);
-
-    if (activeTypes.length === 0) {
-      this.preOriginMarkers = [];
-      return;
-    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/preorigin`);
       const rawData = await response.json();
 
+      // 👇 Mapeo explícito de filtro frontend → clave backend
       const mapping = {
         Nuevo_Sitio: 'nuevoSitio',
         Nuevo_Anillo: 'nuevoAnillo',
@@ -192,6 +190,8 @@ export default {
         });
       }
 
+      console.log('[PREORIGIN FILTERS]', this.filterForPreOrigin);
+      console.log('[PREORIGIN DATA]', normalized.slice(0, 5));
 
       this.preOriginMarkers = normalized;
     } catch (error) {
@@ -199,10 +199,10 @@ export default {
     }
   },
 
-  async fetchRFPlansMarkers(filtrosPlanes = []) {
-    if (!filtrosPlanes || Object.values(filtrosPlanes).every(v => v === false)) {
-      return [];
-    }
+async fetchRFPlansMarkers(filtrosPlanes = []) {
+  if (!filtrosPlanes || Object.values(filtrosPlanes).every(v => v === false)) {
+    return [];
+  }
 
     try {
       let url = `${API_BASE_URL}/api/planesrf`;
@@ -214,6 +214,7 @@ export default {
       if (!res.ok) throw new Error('Error al obtener planes RF');
 
       const rawData = await res.json();
+
       const normalized = [];
 
       for (const arr of rawData) {
