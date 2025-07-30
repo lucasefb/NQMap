@@ -110,15 +110,7 @@ export default {
       reclamosAll: [],
       previousZoom: null,
       groundOverlays: [],
-      filterByCoverageLTE: {
-        'LTE RSRP MEDI.kmz': false,
-        'LTE RSRQ MEDI.kmz': false,
-        'LTE Avg_TH_DL MEDI.kmz': false,
-        // Nuevos overlays AMBA
-        'LTE RSRP AMBA.kmz': false,
-        'LTE RSRQ AMBA.kmz': false,
-        'LTE Avg_TH_DL AMBA.kmz': false
-      },
+
       corpoVipFilter: {
         CORPO: false,
         VIP: false
