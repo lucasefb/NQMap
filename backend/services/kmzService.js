@@ -1,12 +1,17 @@
 import fs from 'fs';
 import path from 'path';
 import AdmZip from 'adm-zip';
+import { parseStringPromise } from 'xml2js';
 import dotenv from 'dotenv';
 dotenv.config();
 
 let cachedKmzData = {};
+// Lista global de overlays de cobertura 4G simplificados
+let coverageOverlays = [];
 
 export async function updateKmzCache(extractedBasePath) {
+  // Reiniciar lista de overlays cada vez que se regenere
+  coverageOverlays = [];
   // Detect environment (local or prod) and build KMZ list accordingly
   const APP_ENV = process.env.APP_ENV;
 
@@ -55,8 +60,6 @@ export async function updateKmzCache(extractedBasePath) {
   // Resolve BASE_DIR according to APP_ENV (expects BASE_DIR_LOCAL / BASE_DIR_PROD in .env)
   const baseDirKey = `BASE_DIR_${APP_ENV ? APP_ENV.toUpperCase() : 'PROD'}`;
   const baseDir = process.env[baseDirKey];
-  console.log('APP_ENV:', APP_ENV);
-  console.log('BASE_DIR usado:', baseDir);
   if (!baseDir) {
     throw new Error(`BASE_DIR no definido para la clave ${baseDirKey} en .env`);
   }
@@ -108,10 +111,55 @@ export async function updateKmzCache(extractedBasePath) {
         return `<href>/extracted/${path.basename(kmzExtractPath)}/${href}</href>`;
       });
 
+      // Guardar KML corregido en cache
       cachedKmzData[kmzFile] = {
         kmzJson: content,
         lastUpdated: new Date()
       };
+
+      // ---- Extraer overlays para render Canvas ----
+      try {
+        const parsed = await parseStringPromise(content);
+        // Buscar GroundOverlay en cualquier nivel del KML
+        const groundOverlays = [];
+        (function recurse(node) {
+          if (!node || typeof node !== 'object') return;
+          if (node.GroundOverlay) {
+            groundOverlays.push(...node.GroundOverlay);
+          }
+          for (const key of Object.keys(node)) {
+            const child = node[key];
+            if (Array.isArray(child)) {
+              child.forEach(recurse);
+            } else {
+              recurse(child);
+            }
+          }
+        })(parsed);
+        console.log(`[KMZ] ${kmzFile} -> GroundOverlay encontrados: ${groundOverlays.length}`);
+        console.log(`[KMZ] ${kmzFile} -> GroundOverlay encontrados: ${groundOverlays.length}`);
+        for (const go of groundOverlays) {
+          const hrefFixed = go.Icon?.[0]?.href?.[0]; // ya incluye /extracted/<carpeta>
+          const latLonBox = go.LatLonBox?.[0] || {};
+          if (!hrefFixed || !latLonBox.north) continue;
+          const defaultLocal = 'http://localhost:3000';
+          const baseUrl = process.env.APP_ENV === 'prod' ? process.env.API_BASE_URL_PROD : (process.env.API_BASE_URL_LOCAL || defaultLocal);
+          const imageUrl = `${baseUrl}${hrefFixed}`;
+          
+          coverageOverlays.push({
+            key: kmzFile,
+            imageUrl,
+            bounds: [
+              parseFloat(latLonBox.south?.[0]),
+              parseFloat(latLonBox.west?.[0]),
+              parseFloat(latLonBox.north?.[0]),
+              parseFloat(latLonBox.east?.[0])
+            ]
+          });
+        }
+      } catch (xmlErr) {
+        console.warn(`⚠️ No se pudieron extraer overlays de ${kmzFile}:`, xmlErr?.message);
+      }
 
       console.log(`✅ KMZ cargado exitosamente: ${kmzFile}`);
     } catch (err) {
@@ -119,10 +167,15 @@ export async function updateKmzCache(extractedBasePath) {
     }
   }
 
+  console.log(`[KMZ] TOTAL overlays cargados: ${coverageOverlays.length}`);
   console.log('\n📊 Resultado final del cache KMZ:');
   console.log(Object.keys(cachedKmzData));
 }
 
 export function getKmzData(filename) {
   return cachedKmzData[filename];
+}
+
+export function getCoverageOverlays() {
+  return coverageOverlays;
 }

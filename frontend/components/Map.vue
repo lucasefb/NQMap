@@ -85,6 +85,7 @@ import FilterBox from './filterBox/FilterBox.vue';
 import KMZLegends from './filterBox/KMZLegends.vue';
 
 import KMZMethods from './methods/KMZMethods';
+import CoverageMethods from './methods/CoverageMethods';
 import FetchMarkers from './methods/FetchMarkers';
 import OnMapReady from './methods/OnMapReady';
 
@@ -102,15 +103,26 @@ export default {
     ReclamosMarkers
   },
   data() {
+    
     return {
       ...DEFAULT_CONFIG,
       center: [-38, -63],
       zoom: 4,
+    coverageOverlays: [],
+    coverageLayer: null,
       reclamosMarkers: [],
       reclamosAll: [],
       previousZoom: null,
       groundOverlays: [],
-
+      filterByCoverageLTE: {
+        'LTE RSRP MEDI.kmz': false,
+        'LTE RSRQ MEDI.kmz': false,
+        'LTE Avg_TH_DL MEDI.kmz': false,
+        // Nuevos overlays AMBA
+        'LTE RSRP AMBA.kmz': false,
+        'LTE RSRQ AMBA.kmz': false,
+        'LTE Avg_TH_DL AMBA.kmz': false
+      },
       corpoVipFilter: {
         CORPO: false,
         VIP: false
@@ -220,7 +232,7 @@ export default {
 
     ...FetchMarkers,
     ...OnMapReady,
-    ...KMZMethods,
+    ...CoverageMethods,
     updateMarkerForLatitudLongitudSearch(newMarker) {
       this.markerForLatitudLongitudSearch = newMarker;
     },
@@ -242,7 +254,7 @@ export default {
     updatefilterByCoverageLTE(newfilterByCoverageLTE) {
   console.log('[padre recibe]', newfilterByCoverageLTE);
       this.filterByCoverageLTE = newfilterByCoverageLTE;
-      this.updateKMZLayer(); // <- Asegura actualización de la capa aunque el zoom no cambie
+      this.updateCoverageLayer(); // <- Asegura actualización de la capa aunque el zoom no cambie
       this.filterReclamos();
     }
   },
@@ -275,13 +287,13 @@ export default {
     },
     filterByCoverageLTE: {
       handler() {
-        this.updateKMZLayer();
+        this.updateCoverageLayer();
       },
       deep: true
     },
     zoom(newZoom) {
       this.fetchReclamosClusters();
-      this.updateKMZLayer();
+      this.updateCoverageLayer();
     },
     corpoVipFilter: {
       handler() {
@@ -297,6 +309,8 @@ export default {
     }
   },
   created() {
+    // Cargar overlays de cobertura 4G una vez
+    this.loadCoverageOverlays();
     this.debouncedFetchMarkers = debounce(this.fetchMarkers, 300);
     this.debouncedFetchBandsMarkers = debounce(this.fetchBandsMarkers, 300);
     this.debouncedFetchPreOriginMarkers = debounce(this.fetchPreOriginMarkers, 300);

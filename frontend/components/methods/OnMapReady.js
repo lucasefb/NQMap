@@ -19,7 +19,12 @@ export default {
       }
     });
 
-    this.mapInstance.on('moveend', async () => {
+    // Crear capa coverage si ya tenemos overlays descargados
+  if (typeof this._createCoverageLayerIfPossible === 'function') {
+    this._createCoverageLayerIfPossible();
+  }
+
+  this.mapInstance.on('moveend', async () => {
       const newCenter = this.mapInstance.getCenter();
       if (!newCenter.equals(this._lastCenter)) {
         await this.fetchMarkers();
