@@ -27,7 +27,6 @@
           />
           <PreOriginMarkers :markers="preOriginMarkers" :zoom="zoom" />
           <RFPlansMarkers :markers="rfPlansMarkers" :zoom="zoom" />
-          <!-- Reclamos markers -->
           <ReclamosMarkers :markers="reclamosMarkers" :zoom="zoom" />
           <div v-if="reclamosMarkers && reclamosMarkers.length === 0 && (corpoVipFilter.CORPO || corpoVipFilter.VIP)" class="no-markers-msg">
             <span style="color: red; background: #fff; padding: 4px 8px; border-radius: 4px; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 9999;">
@@ -79,8 +78,8 @@ import SitesMarkers from './markers/SitesMarkers.vue';
 import BandsCanvasMarkers from './markers/BandsCanvasMarkers.vue';
 import RFPlansMarkers from './markers/RFPlansMarkers.vue';
 import ReclamosMarkers from './markers/ReclamosMarkers.vue';
-import axios from 'axios';
 import PreOriginMarkers from './markers/PreOriginMarkers.vue';
+
 import FilterBox from './filterBox/FilterBox.vue';
 import KMZLegends from './filterBox/KMZLegends.vue';
 
@@ -103,21 +102,7 @@ export default {
   },
   data() {
     return {
-      ...DEFAULT_CONFIG,
-      center: [-38, -63],
-      zoom: 4,
-      reclamosMarkers: [],
-      reclamosAll: [],
-      previousZoom: null,
-      groundOverlays: [],
-
-      corpoVipFilter: {
-        CORPO: false,
-        VIP: false
-      },
-      // Controla si se resaltan sitios con alta carga PRB en bandas 4G
-      loadCellsWithBigPRB: false
-    };
+      ...DEFAULT_CONFIG};
   },
   computed: {
     url() {
@@ -146,77 +131,6 @@ export default {
     }
   },
   methods: {
-    async fetchReclamosClusters() {
-      // Solo pedir reclamos si CORPO o VIP está activo
-      const { CORPO, VIP } = this.corpoVipFilter || {};
-      if (!CORPO && !VIP) {
-        this.reclamosAll = [];
-        this.reclamosMarkers = [];
-        return;
-      }
-      // Esperar a que el mapa esté listo
-      if (!this.mapInstance) {
-        this.reclamosAll = [];
-        this.reclamosMarkers = [];
-        return;
-      }
-      const bounds = this.mapInstance.getBounds();
-      const zoom = this.mapInstance.getZoom();
-      const tipos = [];
-      if (CORPO) tipos.push('CORPO');
-      if (VIP) tipos.push('VIP');
-      try {
-        const res = await this.$axios.$get('/api/reclamosByBounds', {
-          params: {
-            neLat: bounds.getNorthEast().lat,
-            neLng: bounds.getNorthEast().lng,
-            swLat: bounds.getSouthWest().lat,
-            swLng: bounds.getSouthWest().lng,
-            zoom,
-            tipos: tipos.join(',')
-          }
-        });
-        this.reclamosAll = Array.isArray(res) ? res : [];
-        this.filterReclamos();
-      } catch (err) {
-        this.reclamosAll = [];
-        this.reclamosMarkers = [];
-        console.error('Error fetching reclamos clusters', err);
-      }
-    },
-    filterReclamos: debounce(function() {
-      // Usar la respuesta de reclamosAll que ahora puede contener clusters o puntos individuales
-      if (!this.reclamosAll || !Array.isArray(this.reclamosAll)) {
-        this.reclamosMarkers = [];
-        return;
-      }
-      // Si el zoom es >= 14, mostrar puntos individuales; si es < 14, mostrar clusters
-      const zoom = this.mapInstance ? this.mapInstance.getZoom() : this.zoom;
-      // Filtrar y adaptar los clusters/puntos según tipo y zoom
-      const markers = [];
-      for (const feature of this.reclamosAll) {
-        if (feature.type !== 'Feature' || !feature.geometry) continue;
-        const coords = feature.geometry.coordinates;
-        if (feature.properties.cluster) {
-          // Es un cluster (más de un punto)
-          markers.push({
-            lat: coords[1],
-            lng: coords[0],
-            isCluster: true,
-            point_count: feature.properties.point_count,
-            ...feature.properties
-          });
-        } else {
-          // Punto individual
-          markers.push({
-            lat: coords[1],
-            lng: coords[0],
-            ...feature.properties
-          });
-        }
-      }
-      this.reclamosMarkers = markers;
-    }, 100), // Debounce 100ms para evitar recálculos excesivos
 
     ...FetchMarkers,
     ...OnMapReady,
@@ -280,12 +194,12 @@ export default {
       deep: true
     },
     zoom(newZoom) {
-      this.fetchReclamosClusters();
+      this.debouncedFetchReclamos();
       this.updateKMZLayer();
     },
     corpoVipFilter: {
       handler() {
-        this.fetchReclamosClusters();
+        this.debouncedFetchReclamos();
       },
       deep: true
     },
@@ -300,12 +214,10 @@ export default {
     this.debouncedFetchMarkers = debounce(this.fetchMarkers, 300);
     this.debouncedFetchBandsMarkers = debounce(this.fetchBandsMarkers, 300);
     this.debouncedFetchPreOriginMarkers = debounce(this.fetchPreOriginMarkers, 300);
+    this.debouncedFetchReclamos = debounce(this.fetchReclamos, 300);
 
     // Fetch reclamos agrupados dinámicamente según bounds y zoom
-    this.fetchReclamosClusters();
-    this.debouncedFetchMarkers = debounce(this.fetchMarkers, 300);
-    this.debouncedFetchBandsMarkers = debounce(this.fetchBandsMarkers, 300);
-    this.debouncedFetchPreOriginMarkers = debounce(this.fetchPreOriginMarkers, 300);
+    this.debouncedFetchReclamos();
   }
 }
 </script>
