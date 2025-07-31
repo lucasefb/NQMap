@@ -16,12 +16,6 @@ import {
   buildReclamosSupercluster,
 } from './cacheUtils.js';
 
-/**
- * Estructura de cache en memoria que comparten los distintos endpoints.
- * Se completa en dos fases:
- *  1. Datos esenciales (sitios, celdas, planes, load LTE, etc.) ➜ updateCache()
- *  2. Reclamos y acciones de calidad                    ➜ loadReclamos() (async, no bloqueante)
- */
 export const cachedData = {
   // Flags de readiness
   sitesReady: false,

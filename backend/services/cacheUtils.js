@@ -103,11 +103,6 @@ export function buildSupercluster(allCellsAllInfo) {
   return clustersBySolution;
 }
 
-/**
- * Genera clusters y rtree para reclamos normalizados por tipo (CORPO, VIP, etc)
- * @param {Array} reclamosNormalizados
- * @returns {Object} clustersByTipoReclamo
- */
 export function buildReclamosSupercluster(reclamosNormalizados) {
   const tipoMap = {};
   const rtrees = {};
