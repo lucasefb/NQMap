@@ -10,7 +10,7 @@
             :loadCellsWithBigPRB="loadCellsWithBigPRB" />
           <PreOriginCanvasMarkers :mapInstance="mapInstance" :markers="preOriginMarkers" :zoom="zoom" />
           <RFPlansCanvasMarkers :mapInstance="mapInstance" :markers="rfPlansMarkers" :zoom="zoom" />
-          <ReclamosMarkers :markers="reclamosMarkers" :zoom="zoom" />
+          <ReclamosCanvasMarkers v-if="mapInstance" :markers="reclamosMarkers" :mapInstance="mapInstance" :zoom="zoom" />
           <div v-if="reclamosMarkers && reclamosMarkers.length === 0 && (corpoVipFilter.CORPO || corpoVipFilter.VIP)"
             class="no-markers-msg">
             <span
@@ -49,7 +49,7 @@ import LatLngMarker from './markers/LatLngMarker.vue';
 import SitesCanvasMarkers from './markers/SitesCanvasMarkers.vue';
 import BandsCanvasMarkers from './markers/BandsCanvasMarkers.vue';
 import RFPlansCanvasMarkers from './markers/RFPlansCanvasMarkers.vue';
-import ReclamosMarkers from './markers/ReclamosMarkers.vue';
+import ReclamosCanvasMarkers from './markers/ReclamosCanvasMarkers.vue';
 import PreOriginCanvasMarkers from './markers/PreOriginCanvasMarkers.vue';
 
 import FilterBox from './filterBox/FilterBox.vue';
@@ -70,7 +70,7 @@ export default {
     PreOriginCanvasMarkers,
     FilterBox,
     KMZLegends,
-    ReclamosMarkers
+    ReclamosCanvasMarkers
   },
   data() {
     return { ...DEFAULT_CONFIG };
