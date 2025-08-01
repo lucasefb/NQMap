@@ -153,7 +153,7 @@ export async function updateCache() {
     cachedData.loadLTEReady    = true;
     cachedData.lastUpdated     = new Date();
 
-    console.log('✅ Cache esencial actualizado');
+    
   } catch (e) {
     console.error('❌ Error en updateCache:', e);
   } finally {
@@ -222,7 +222,7 @@ async function loadReclamos() {
     cachedData.reclamosSuperCluster = buildReclamosSupercluster(reclamosNorm);
     cachedData.reclamosReady = true;
 
-    console.log(`📋 Reclamos normalizados: ${reclamosNorm.length}`);
+    
   } catch (e) {
     console.error('❌ Error cargando reclamos:', e);
   } finally {

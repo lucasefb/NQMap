@@ -200,7 +200,10 @@ export default {
   },
 
 async fetchRFPlansMarkers(filtrosPlanes = []) {
-  if (!filtrosPlanes || Object.values(filtrosPlanes).every(v => v === false)) {
+    console.log('[RFPLANS] fetchRFPlansMarkers called with:', filtrosPlanes);
+  // Si filtrosPlanes es un objeto de checkboxes y todos están false → no pedir nada.
+  if (filtrosPlanes && typeof filtrosPlanes === 'object' && !Array.isArray(filtrosPlanes) && Object.values(filtrosPlanes).every(v => v === false)) {
+    console.log('[RFPLANS] Early return: todos los checkboxes RF desactivados');
     return [];
   }
 

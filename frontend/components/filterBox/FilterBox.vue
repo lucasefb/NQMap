@@ -249,7 +249,7 @@ export default {
     },
     // ...
     update4G(key, value) {
-      console.log('[update4G] key:', key, 'value:', value, 'antes:', { ...this.filterByCoverageLTE });
+      
       const is4GKey = key.includes('RSRP') || key.includes('RSRQ') || key.includes('TH_DL');
       if (!is4GKey) return;
 
