@@ -6,6 +6,9 @@ export function createSitesCanvasLayer() {
     initialize: function () {
       this._sites = [];
       this._hovered = null;
+      this._dynamicColorMap = {};
+      this._colorPalette = ['#1E88E5','#D81B60','#43A047','#F4511E','#8E24AA','#00ACC1','#FFD600','#5D4037','#7CB342','#F06292','#3949AB','#00897B','#E53935','#6D4C41','#C0CA33'];
+      this._paletteIndex = 0;
     },
 
     setSites(sites) {
@@ -48,24 +51,47 @@ export function createSitesCanvasLayer() {
     },
 
     _scaleRadius(count) {
-      if (count >= 100) return 32;
-      if (count >= 50) return 26;
-      if (count === 1) return 18;
-      return 22;
+      if (count >= 100) return 20;
+      if (count >= 50) return 16;
+      if (count === 1) return 12;
+      return 14;
+    },
+
+    _colorForSolution(solution) {
+      // Always assign a unique color for each solution (no repeats)
+      if (!this._uniqueColorMap) {
+        this._uniqueColorMap = {};
+        this._uniquePalette = [
+          '#1E88E5','#D81B60','#43A047','#F4511E','#8E24AA','#00ACC1','#FFD600','#5D4037','#7CB342','#F06292',
+          '#3949AB','#00897B','#E53935','#6D4C41','#C0CA33','#FF7043','#AB47BC','#00E676','#FFA000','#A1887F',
+          '#90CAF9','#FFB300','#C51162','#00B8D4','#C62828','#33691E','#FFEB3B','#B2FF59','#6D4C41','#AEEA00',
+          '#FF6F00','#B388FF','#00BFAE','#FF5252','#8D6E63','#FF4081','#00C853','#FFD740','#B0BEC5','#D50000'
+        ];
+        this._uniqueIndex = 0;
+      }
+      const key = (solution || '').toUpperCase();
+      if (!this._uniqueColorMap[key]) {
+        // assign next color in palette, cycling if needed but only if truly out
+        let nextColor;
+        do {
+          nextColor = this._uniquePalette[this._uniqueIndex % this._uniquePalette.length];
+          this._uniqueIndex++;
+        } while (Object.values(this._uniqueColorMap).includes(nextColor) && this._uniqueIndex < 1000);
+        this._uniqueColorMap[key] = nextColor;
+      }
+      return this._uniqueColorMap[key];
     },
 
     _redraw: function () {
       if (!this._ctx) return;
       const ctx = this._ctx;
       ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
-      const zoom = this._map.getZoom();
-      if (zoom < 10) return;
 
       for (const s of this._sites) {
         const p = this._map.latLngToContainerPoint([s.lat, s.lng]);
         if (s.isCluster) {
           const r = this._scaleRadius(s.count || 1);
-          const color = 'rgba(25, 118, 210, 0.8)';
+          const color = this._colorForSolution(s.solution);
           ctx.beginPath();
           ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
           ctx.fillStyle = color;
