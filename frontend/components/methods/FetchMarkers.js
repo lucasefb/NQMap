@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.API_BASE_URL;
- 
+
 export default {
   async fetchMarkers() {
     if (!this.mapInstance) {
@@ -52,7 +52,7 @@ export default {
           };
         }
       }).filter(Boolean);
-      console.log('[CLUSTER-DEBUG] Markers normalizados:', normalizedMarkers.slice(0,5));
+      console.log('[CLUSTER-DEBUG] Markers normalizados:', normalizedMarkers.slice(0, 5));
 
       // --- Chequeo de duplicados en markers normalizados ---
       const keySet = new Set();
@@ -199,13 +199,71 @@ export default {
     }
   },
 
-async fetchRFPlansMarkers(filtrosPlanes = []) {
-    console.log('[RFPLANS] fetchRFPlansMarkers called with:', filtrosPlanes);
-  // Si filtrosPlanes es un objeto de checkboxes y todos están false → no pedir nada.
-  if (filtrosPlanes && typeof filtrosPlanes === 'object' && !Array.isArray(filtrosPlanes) && Object.values(filtrosPlanes).every(v => v === false)) {
-    console.log('[RFPLANS] Early return: todos los checkboxes RF desactivados');
-    return [];
-  }
+  async fetchReclamos() {
+    const { CORPO, VIP } = this.corpoVipFilter || {};
+    if (!CORPO && !VIP) {
+      this.reclamosAll = [];
+      this.reclamosMarkers = [];
+      return;
+    }
+    // Esperar a que el mapa esté listo
+    if (!this.mapInstance) {
+      this.reclamosAll = [];
+      this.reclamosMarkers = [];
+      return;
+    }
+    const bounds = this.mapInstance.getBounds();
+    const zoom = this.mapInstance.getZoom();
+    const tipos = [];
+    if (CORPO) tipos.push('CORPO');
+    if (VIP) tipos.push('VIP');
+    try {
+      const res = await this.$axios.$get('/api/reclamosByBounds', {
+        params: {
+          neLat: bounds.getNorthEast().lat,
+          neLng: bounds.getNorthEast().lng,
+          swLat: bounds.getSouthWest().lat,
+          swLng: bounds.getSouthWest().lng,
+          zoom,
+          tipos: tipos.join(',')
+        }
+      });
+      this.reclamosAll = Array.isArray(res) ? res : [];
+      // Normalizar datos en markers
+      const markers = [];
+      for (const feature of this.reclamosAll) {
+        if (feature.type !== 'Feature' || !feature.geometry) continue;
+        const coords = feature.geometry.coordinates;
+        if (feature.properties.cluster) {
+          // Es un cluster (más de un punto)
+          markers.push({
+            lat: coords[1],
+            lng: coords[0],
+            isCluster: true,
+            point_count: feature.properties.point_count,
+            ...feature.properties
+          });
+        } else {
+          // Punto individual
+          markers.push({
+            lat: coords[1],
+            lng: coords[0],
+            ...feature.properties
+          });
+        }
+      }
+      this.reclamosMarkers = markers;
+    } catch (err) {
+      this.reclamosAll = [];
+      this.reclamosMarkers = [];
+      console.error('Error fetching reclamos clusters', err);
+    }
+  },
+
+  async fetchRFPlansMarkers(filtrosPlanes = []) {
+    if (!filtrosPlanes || Object.values(filtrosPlanes).every(v => v === false)) {
+      return [];
+    }
 
     try {
       let url = `${API_BASE_URL}/api/planesrf`;
@@ -242,6 +300,4 @@ async fetchRFPlansMarkers(filtrosPlanes = []) {
       return [];
     }
   }
-
 };
-

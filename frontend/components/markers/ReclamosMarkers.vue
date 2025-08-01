@@ -48,6 +48,19 @@
 
 <script>
 
+// Marker SVG para reclamos (VIP/CORPO)
+function getReclamoSvgIcon ({ tipo = 'VIP', radius = 12 } = {}) {
+  const color = tipo === 'VIP' ? '#007bff' : '#ff0000'
+  const size = radius * 2
+  const svg = `
+    <svg width="${size}" height="${size}" viewBox="-2 0 19 19" xmlns="http://www.w3.org/2000/svg" fill="${color}">
+      <path d="M14.032 5.286v7.276a1.112 1.112 0 0 1-1.108 1.108H8.75l-1.02 1.635a.273.273 0 0 1-.503 0l-1.02-1.635h-4.13a1.112 1.112 0 0 1-1.109-1.108V5.286a1.112 1.112 0 0 1 1.108-1.108h10.848a1.112 1.112 0 0 1 1.108 1.108zM8.206 11.34a.706.706 0 1 0-.706.705.706.706 0 0 0 .706-.705zm-1.26-1.83a.554.554 0 1 0 1.108 0V6.275a.554.554 0 1 0-1.108 0z"/>
+    </svg>
+  `
+  return svg
+}
+
+
 export default {
   components: {
     LTooltip: () => process.client ? import('vue2-leaflet').then(m => m.LTooltip) : Promise.resolve({ render: () => null }),
@@ -88,24 +101,16 @@ export default {
     },
 
     iconFor (row) {
-      const tipo = (row.tipo || row.TIPO_RECLAMO || '').toUpperCase();
-      let color = '#e74c3c'; // otros → rojo
-      if (tipo === 'VIP') {
-        color = '#007bff'; // VIP → azul
-      } else if (tipo === 'CORPO') {
-        color = '#f39c12'; // CORPO → naranja
-      }
-      const svg = `
-        <svg width="24" height="32" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 32c-.3 0-.6-.14-.8-.41C6.8 25.7 2 18.94 2 13 2 6.93 6.93 2 13 2s11 4.93 11 11c0 5.94-4.8 12.7-9.2 18.59-.2.27-.5.41-.8.41z" fill="${color}"/>
-          <circle cx="12" cy="13" r="5" fill="#fff"/>
-        </svg>
-      `;
+      // Determine type and build icon using common helper
+      const tipo = (row.tipo || row.TIPO_RECLAMO || '').toUpperCase() || 'OTROS'
+      const svg = getReclamoSvgIcon({ tipo, radius: 12 }) // radius 12 => 24px width
       return L.divIcon({
         html: svg,
-        iconSize: [24, 32],
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        popupAnchor: [0, -12],
         className: 'reclamo-svg-icon'
-      });
+      })
     }
   }
 }

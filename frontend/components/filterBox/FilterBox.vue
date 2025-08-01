@@ -126,7 +126,8 @@
     </div>
 
     <FilterGroup title="Reclamos" :selectable="false" :checked="false">
-      <CorpoVipFilterBox v-model="localCorpoVipFilter" />
+      <FilterItem :checked="localCorpoVipFilter.CORPO" @update="updateCorpoVip('CORPO', $event)">CORPO</FilterItem>
+      <FilterItem :checked="localCorpoVipFilter.VIP" @update="updateCorpoVip('VIP', $event)">VIP</FilterItem>
     </FilterGroup>
     <button @click="toggleMapType">
       Cambiar a {{ nextMapTypeName }}
@@ -137,11 +138,11 @@
 <script>
 import FilterGroup from "./FilterGroup.vue";
 import FilterItem from "./FilterItem.vue";
-import CorpoVipFilterBox from "./CorpoVipFilterBox.vue";
+
 
 export default {
   name: "FilterBox",
-  components: { FilterGroup, FilterItem, CorpoVipFilterBox },
+  components: { FilterGroup, FilterItem },
   props: {
     
     filterForRFPlans: Object,
@@ -212,6 +213,9 @@ export default {
   },
 
   methods: {
+    updateCorpoVip(key, checked) {
+      this.$set(this.localCorpoVipFilter, key, checked);
+    },
     toggle(group) {
       this[`show${group}`] = !this[`show${group}`];
     },
