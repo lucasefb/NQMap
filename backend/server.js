@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import cellRoutes from './routes/cellRoutes.js';
 import { updateCache } from './services/cacheUpdater.js';
+import { getCoverageOverlays } from './services/kmzService.js';
 import { updateKmzCache, getKmzData } from './services/kmzService.js';
 
 // Cargar .env
@@ -43,19 +44,26 @@ setInterval(() => updateKmzCache(extractedPath), ONE_DAY);
 
 // Cargar caché al iniciar
 updateCache().then(() => {
-  console.log('✅ Cache inicial cargado');
+
 }).catch(err => {
   console.error('❌ Error al cargar cache inicial:', err);
 });
 
 updateKmzCache(extractedPath).then(() => {
-  console.log('✅ KMZ cache inicial cargado');
+
 }).catch(err => {
   console.error('❌ Error al cargar KMZ cache inicial:', err);
 });
 
 // Rutas principales
 app.use('/api', cellRoutes);
+
+// Endpoint para obtener overlays de cobertura 4G simplificados
+app.get('/api/coverage4g', (req, res) => {
+  const overlays = getCoverageOverlays();
+
+  res.json(overlays);
+});
 
 // Endpoint para obtener contenido KMZ procesado
 app.get('/api/get-kmz/:filename', (req, res) => {

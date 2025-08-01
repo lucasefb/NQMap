@@ -5,13 +5,14 @@
       <client-only>
         <l-map ref="map" style="height: 100%; width: 100%;" :zoom="zoom" :center="center" @ready="onMapReady">
           <l-tile-layer :url="url" :attribution="attribution" />
-          <SitesMarkers v-if="mapInstance" :markersForAllCells="markersForAllCells" :mapInstance="mapInstance"
-            :zoom="zoom" />
+
+          <SitesCanvasMarkers v-if="mapInstance" :markersForAllCells="markersForAllCells" :mapInstance="mapInstance" :zoom="zoom" />
           <BandsCanvasMarkers :mapInstance="mapInstance" :markers="bandsMarkers" :zoom="zoom"
             :loadCellsWithBigPRB="loadCellsWithBigPRB" />
-          <PreOriginMarkers :markers="preOriginMarkers" :zoom="zoom" />
-          <RFPlansMarkers :markers="rfPlansMarkers" :zoom="zoom" />
-          <ReclamosMarkers :markers="reclamosMarkers" :zoom="zoom" />
+          <PreOriginCanvasMarkers :mapInstance="mapInstance" :markers="preOriginMarkers" :zoom="zoom" />
+          <RFPlansCanvasMarkers :mapInstance="mapInstance" :markers="rfPlansMarkers" :zoom="zoom" />
+          <ReclamosCanvasMarkers v-if="mapInstance" :markers="reclamosMarkers" :mapInstance="mapInstance" :zoom="zoom" />
+          
           <div v-if="reclamosMarkers && reclamosMarkers.length === 0 && (corpoVipFilter.CORPO || corpoVipFilter.VIP)"
             class="no-markers-msg">
             <span
@@ -47,11 +48,12 @@ import 'leaflet/dist/leaflet.css';
 import Header from './Header.vue';
 import LoadingSpinner from './LoadingSpinner.vue';
 import LatLngMarker from './markers/LatLngMarker.vue';
-import SitesMarkers from './markers/SitesMarkers.vue';
+import SitesCanvasMarkers from './markers/SitesCanvasMarkers.vue';
 import BandsCanvasMarkers from './markers/BandsCanvasMarkers.vue';
-import RFPlansMarkers from './markers/RFPlansMarkers.vue';
-import ReclamosMarkers from './markers/ReclamosMarkers.vue';
-import PreOriginMarkers from './markers/PreOriginMarkers.vue';
+
+import RFPlansCanvasMarkers from './markers/RFPlansCanvasMarkers.vue';
+import ReclamosCanvasMarkers from './markers/ReclamosCanvasMarkers.vue';
+import PreOriginCanvasMarkers from './markers/PreOriginCanvasMarkers.vue';
 
 import FilterBox from './filterBox/FilterBox.vue';
 import KMZLegends from './filterBox/KMZLegends.vue';
@@ -65,13 +67,13 @@ export default {
     Header,
     LoadingSpinner,
     LatLngMarker,
-    SitesMarkers,
+    SitesCanvasMarkers,
     BandsCanvasMarkers,
-    RFPlansMarkers,
-    PreOriginMarkers,
+    RFPlansCanvasMarkers,
+    PreOriginCanvasMarkers,
     FilterBox,
     KMZLegends,
-    ReclamosMarkers
+    ReclamosCanvasMarkers
   },
   data() {
     return { ...DEFAULT_CONFIG };

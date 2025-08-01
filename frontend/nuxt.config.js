@@ -4,8 +4,8 @@ const env = process.env.APP_ENV || 'local';
 
 // Configuración dinámica
 const API_BASE_URL = env === 'prod'
-  ? (process.env.API_BASE_URL_PROD || '')
-  : (process.env.API_BASE_URL_LOCAL || '');
+  ? process.env.API_BASE_URL_PROD
+  : process.env.API_BASE_URL_LOCAL;
 
 const HOST = env === 'prod'
   ? process.env.HOST_PROD

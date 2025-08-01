@@ -9,6 +9,8 @@ let cachedKmzData = {};
 let cachedOverlays = [];
 
 export async function updateKmzCache(extractedBasePath) {
+  // Reiniciar lista de overlays cada vez que se regenere
+  cachedOverlays = [];
   // Detect environment (local or prod) and build KMZ list accordingly
   const APP_ENV = process.env.APP_ENV;
 
@@ -57,8 +59,6 @@ export async function updateKmzCache(extractedBasePath) {
   // Resolve BASE_DIR according to APP_ENV (expects BASE_DIR_LOCAL / BASE_DIR_PROD in .env)
   const baseDirKey = `BASE_DIR_${APP_ENV ? APP_ENV.toUpperCase() : 'PROD'}`;
   const baseDir = process.env[baseDirKey];
-  console.log('APP_ENV:', APP_ENV);
-  console.log('BASE_DIR usado:', baseDir);
   if (!baseDir) {
     throw new Error(`BASE_DIR no definido para la clave ${baseDirKey} en .env`);
   }
@@ -163,6 +163,7 @@ export async function updateKmzCache(extractedBasePath) {
     }
   }
 
+  console.log(`[KMZ] TOTAL overlays cargados: ${cachedOverlays.length}`);
   console.log('\n📊 Resultado final del cache KMZ:');
   console.log(Object.keys(cachedKmzData));
 }
@@ -173,4 +174,8 @@ export function getAllOverlays() {
 
 export function getKmzData(filename) {
   return cachedKmzData[filename];
+}
+
+export function getCoverageOverlays() {
+  return cachedOverlays;
 }
