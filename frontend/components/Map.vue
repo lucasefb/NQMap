@@ -56,7 +56,7 @@ import PreOriginMarkers from './markers/PreOriginMarkers.vue';
 import FilterBox from './filterBox/FilterBox.vue';
 import KMZLegends from './filterBox/KMZLegends.vue';
 
-import KMZMethods from './methods/KMZMethods';
+import CoverageMethods from './methods/CoverageMethods';
 import FetchMarkers from './methods/FetchMarkers';
 import OnMapReady from './methods/OnMapReady';
 
@@ -105,7 +105,7 @@ export default {
   methods: {
     ...FetchMarkers,
     ...OnMapReady,
-    ...KMZMethods,
+    ...CoverageMethods,
     updateMarkerForLatitudLongitudSearch(newMarker) {
       this.markerForLatitudLongitudSearch = newMarker;
     },
@@ -126,7 +126,7 @@ export default {
     },
     updatefilterByCoverageLTE(newfilterByCoverageLTE) {
       this.filterByCoverageLTE = newfilterByCoverageLTE;
-      this.updateKMZLayer();
+      this.updateCoverageLayer(); // <- Asegura actualización de la capa aunque el zoom no cambie
       this.debouncedFetchReclamos();
     }
   },
@@ -158,14 +158,14 @@ export default {
       deep: true
     },
     filterByCoverageLTE: {
-      handler() {
-        this.updateKMZLayer();
+        handler() {
+          this.updateCoverageLayer();
+        },
+        deep: true
       },
-      deep: true
-    },
     zoom(newZoom) {
+      this.updateCoverageLayer();
       this.debouncedFetchReclamos();
-      this.updateKMZLayer();
     },
     corpoVipFilter: {
       handler() {
@@ -181,6 +181,8 @@ export default {
     }
   },
   created() {
+    // Cargar overlays de cobertura 4G una vez
+    this.loadCoverageOverlays();
     this.debouncedFetchMarkers = debounce(this.fetchMarkers, 300);
     this.debouncedFetchBandsMarkers = debounce(this.fetchBandsMarkers, 300);
     this.debouncedFetchPreOriginMarkers = debounce(this.fetchPreOriginMarkers, 300);
@@ -188,6 +190,7 @@ export default {
     this.debouncedFetchReclamos();
   }
 }
+
 </script>
 
 <style scoped></style>

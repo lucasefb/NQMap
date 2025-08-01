@@ -12,6 +12,9 @@ export default {
   components: {
     Map,
   },
+  mounted() {
+    console.log('[INDEX PAGE] Este log DEBE aparecer en consola si el build es correcto');
+  }
 }
 </script>
 

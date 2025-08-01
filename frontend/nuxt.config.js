@@ -36,7 +36,8 @@ export default {
   ],
 
   plugins: [
-    { src: '~/plugins/leaflet.js', mode: 'client' }
+    { src: '~/plugins/leaflet.js', mode: 'client' },
+    { src: '~/plugins/test.js', mode: 'client' }
   ],
 
   axios: {
