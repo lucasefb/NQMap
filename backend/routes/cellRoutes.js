@@ -1,7 +1,7 @@
 import express from 'express';
 import { updateCache, cachedData } from '../services/cacheUpdater.js';
 import { getCellsByBoundsAndBands } from '../services/cacheUtils.js';
-import { getKmzData } from '../services/kmzService.js';
+import { getKmzData, getAllOverlays } from '../services/kmzService.js';
 
 const router = express.Router();
 
@@ -210,6 +210,18 @@ router.get('/get-kmz/:filename', async (req, res) => {
   } catch (err) {
     console.error('Error al obtener KMZ:', err);
     res.status(500).json({ error: 'Error interno al leer KMZ' });
+  }
+});
+
+// --- NUEVO: Endpoint de overlays de cobertura 4G ---
+router.get('/coverage4g', (req, res) => {
+  try {
+    const data = getAllOverlays();
+
+    res.json(data);
+  } catch (err) {
+    console.error('Error al obtener overlays:', err);
+    res.status(500).json({ error: 'Error interno overlays' });
   }
 });
 

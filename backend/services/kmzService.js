@@ -6,8 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 let cachedKmzData = {};
-// Lista global de overlays de cobertura 4G simplificados
-let coverageOverlays = [];
+let cachedOverlays = [];
 
 export async function updateKmzCache(extractedBasePath) {
   // Reiniciar lista de overlays cada vez que se regenere
@@ -108,58 +107,55 @@ export async function updateKmzCache(extractedBasePath) {
 
       console.log(`✏️ Corrigiendo rutas relativas en <href>`);
       content = content.replace(/<href>(.*?)<\/href>/g, (_, href) => {
-        return `<href>/extracted/${path.basename(kmzExtractPath)}/${href}</href>`;
+        const defaultLocal = process.env.API_BASE_URL_LOCAL || 'http://localhost:3000';
+        const baseUrl = process.env.APP_ENV === 'prod' ? (process.env.API_BASE_URL_PROD || '') : defaultLocal;
+        const prefix = baseUrl;
+        return `<href>${prefix}/extracted/${path.basename(kmzExtractPath)}/${href}</href>`;
       });
 
-      // Guardar KML corregido en cache
-      cachedKmzData[kmzFile] = {
-        kmzJson: content,
-        lastUpdated: new Date()
-      };
-
-      // ---- Extraer overlays para render Canvas ----
+      // Parse KML to extract overlays (GroundOverlay)
+      let overlays = [];
       try {
-        const parsed = await parseStringPromise(content);
-        // Buscar GroundOverlay en cualquier nivel del KML
-        const groundOverlays = [];
-        (function recurse(node) {
-          if (!node || typeof node !== 'object') return;
+        const kmlObj = await parseStringPromise(content, { explicitArray: false });
+        // Find all GroundOverlay elements (can be nested)
+        const findGroundOverlays = (node) => {
+          if (!node || typeof node !== 'object') return [];
+          let list = [];
           if (node.GroundOverlay) {
-            groundOverlays.push(...node.GroundOverlay);
+            list = list.concat(Array.isArray(node.GroundOverlay) ? node.GroundOverlay : [node.GroundOverlay]);
           }
           for (const key of Object.keys(node)) {
-            const child = node[key];
-            if (Array.isArray(child)) {
-              child.forEach(recurse);
-            } else {
-              recurse(child);
-            }
+            list = list.concat(findGroundOverlays(node[key]));
           }
-        })(parsed);
-        console.log(`[KMZ] ${kmzFile} -> GroundOverlay encontrados: ${groundOverlays.length}`);
-        console.log(`[KMZ] ${kmzFile} -> GroundOverlay encontrados: ${groundOverlays.length}`);
-        for (const go of groundOverlays) {
-          const hrefFixed = go.Icon?.[0]?.href?.[0]; // ya incluye /extracted/<carpeta>
-          const latLonBox = go.LatLonBox?.[0] || {};
-          if (!hrefFixed || !latLonBox.north) continue;
-          const defaultLocal = 'http://localhost:3000';
-          const baseUrl = process.env.APP_ENV === 'prod' ? process.env.API_BASE_URL_PROD : (process.env.API_BASE_URL_LOCAL || defaultLocal);
-          const imageUrl = `${baseUrl}${hrefFixed}`;
-          
-          coverageOverlays.push({
+          return list;
+        };
+        const groundOverlays = findGroundOverlays(kmlObj);
+        overlays = groundOverlays.map(go => {
+          const href = go.Icon?.href || go.Icon?.[0]?.href;
+          const box = go.LatLonBox || go.latLonBox;
+          if (!href || !box) return null;
+          const south = parseFloat(box.south || box.South || (box[0]?.south));
+          const west = parseFloat(box.west || box.West || (box[0]?.west));
+          const north = parseFloat(box.north || box.North || (box[0]?.north));
+          const east = parseFloat(box.east || box.East || (box[0]?.east));
+          return {
             key: kmzFile,
-            imageUrl,
-            bounds: [
-              parseFloat(latLonBox.south?.[0]),
-              parseFloat(latLonBox.west?.[0]),
-              parseFloat(latLonBox.north?.[0]),
-              parseFloat(latLonBox.east?.[0])
-            ]
-          });
-        }
-      } catch (xmlErr) {
-        console.warn(`⚠️ No se pudieron extraer overlays de ${kmzFile}:`, xmlErr?.message);
+            imageUrl: href,
+            bounds: [south, west, north, east]
+          };
+        }).filter(Boolean);
+      } catch(err) {
+        console.error('Error parsing KML for overlays', err);
       }
+
+      cachedKmzData[kmzFile] = {
+        kmzJson: content,
+        overlays,
+        lastUpdated: new Date()
+      };
+      cachedOverlays = cachedOverlays.concat(overlays);
+      // Log primeras 3 imágenes para depuración
+      overlays.slice(0,3).forEach(o=>console.log('↪ img', o.imageUrl));
 
       console.log(`✅ KMZ cargado exitosamente: ${kmzFile}`);
     } catch (err) {
@@ -170,6 +166,10 @@ export async function updateKmzCache(extractedBasePath) {
   console.log(`[KMZ] TOTAL overlays cargados: ${coverageOverlays.length}`);
   console.log('\n📊 Resultado final del cache KMZ:');
   console.log(Object.keys(cachedKmzData));
+}
+
+export function getAllOverlays() {
+  return cachedOverlays;
 }
 
 export function getKmzData(filename) {

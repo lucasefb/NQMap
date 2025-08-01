@@ -10,6 +10,7 @@ export default {
     if (this.coverageOverlays && this.coverageOverlays.length) return;
     try {
       const res = await this.$axios.get(`${API_BASE_URL}/api/coverage4g`);
+      
       this.coverageOverlays = res.data;
       if (this.coverageOverlays.length === 0) {
         
@@ -49,6 +50,7 @@ export default {
     const activeKeys = Object.entries(this.filterByCoverageLTE || {})
       .filter(([k, v]) => v)
       .map(([k]) => k);
+    
     this.coverageLayer.setActiveKeys(activeKeys);
     this._activeKeysCount = activeKeys.length;
     

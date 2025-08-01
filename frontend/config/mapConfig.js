@@ -134,5 +134,11 @@ export const DEFAULT_CONFIG = {
   groundOverlays: [],
   isLoading: false,
   loadCellsWithBigPRB: false,
+  reclamosMarkers: [],
+  reclamosAll: [],
+  corpoVipFilter: {
+    CORPO: false,
+    VIP: false
+  }
 }
  

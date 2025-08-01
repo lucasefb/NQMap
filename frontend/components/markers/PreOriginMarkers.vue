@@ -5,16 +5,30 @@
       :key="index"
       :lat-lng="[marker.lat, marker.lng]"
       :icon="iconForOrigin(marker)"
-     />
+      ref="markerRefs"
+      ref-in-for
+      @l-mouseover="showTooltip(marker)"
+      @l-mouseout="hideTooltip"
+      @l-mousedown="hideTooltip"
+    >
+      <l-tooltip>
+        <div>
+          <strong>{{ marker.sitio || 'Sin nombre' }}</strong><br />
+          {{ marker.descripcion || 'Sin descripción' }}<br />
+          <small>{{ (marker.fecha || '').slice(0,10) || 'Sin fecha' }}</small>
+        </div>
+      </l-tooltip>
+      <PreOriginTooltip ref="LTooltipRef" />
+    </l-marker>
   </div>
 </template>
 
 <script>
-import BandsTooltip from './BandsTooltip.vue';
+import PreOriginTooltip from './PreOriginTooltip.vue';
 
 export default {
   components: {
-    BandsTooltip
+    PreOriginTooltip
   },
   props: {
     markers: Array,
@@ -56,7 +70,14 @@ export default {
       };
 
       return createIcon();
+    },
+    showTooltip(marker) {
+      this.$refs.LTooltipRef?.showTooltip(marker);
+    },
+    hideTooltip() {
+      this.$refs.LTooltipRef?.hideTooltip();
     }
   }
 };
 </script>
+

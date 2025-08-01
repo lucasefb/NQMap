@@ -11,20 +11,31 @@
       :icon="iconForRF()"
       ref="markerRefs"
       ref-in-for
+      @l-mouseover="showTooltip(marker)"
+      @l-mouseout="hideTooltip"
+      @l-mousedown="hideTooltip"
     >
       <l-tooltip>
         <div>
           <strong>{{ marker.nombre || 'Sin nombre' }}</strong><br />
-          {{ marker.descripcion || 'Sin descripción' }}<br />
-          <small>{{ marker.fecha || 'Sin fecha' }}</small>
+          <template v-if="marker.descripcion">
+          {{ marker.descripcion }}<br />
+          </template>
+          <small>{{ (marker.fecha || '').slice(0,10) || 'Sin fecha' }}</small>
         </div>
       </l-tooltip>
+      <RFPlansTooltip ref="rfTooltipRef" />
     </l-marker>
   </div>
 </template>
 
 <script>
+import RFPlansTooltip from './RFPlansTooltip.vue';
+
 export default {
+  components: {
+    RFPlansTooltip
+  },
   watch: {
     markers(newVal) {
       // Limpieza manual de layers si markers queda vacío y existen refs
@@ -36,6 +47,9 @@ export default {
         });
       }
     }
+  },
+  mounted() {
+    console.log('[RFPlansMarkers] mounted, markers:', this.markers);
   },
   props: {
     markers: Array,
@@ -67,6 +81,14 @@ export default {
         className: 'custom-icon-class',
       });
     },
+    showTooltip(marker) {
+      console.log('[RFPlansMarkers] showTooltip marker:', marker);
+      this.$refs.rfTooltipRef?.showTooltip(marker);
+    },
+    hideTooltip() {
+      console.log('[RFPlansMarkers] hideTooltip');
+      this.$refs.rfTooltipRef?.hideTooltip();
+    },
   },
   computed: {
     filteredMarkers() {
@@ -81,3 +103,10 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.leaflet-tooltip {
+  max-width: 300px !important;
+  white-space: normal;
+}
+</style>
