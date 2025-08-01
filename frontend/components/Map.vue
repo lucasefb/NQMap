@@ -5,8 +5,7 @@
       <client-only>
         <l-map ref="map" style="height: 100%; width: 100%;" :zoom="zoom" :center="center" @ready="onMapReady">
           <l-tile-layer :url="url" :attribution="attribution" />
-          <SitesMarkers v-if="mapInstance" :markersForAllCells="markersForAllCells" :mapInstance="mapInstance"
-            :zoom="zoom" />
+          <SitesCanvasMarkers v-if="mapInstance" :markersForAllCells="markersForAllCells" :mapInstance="mapInstance" :zoom="zoom" />
           <BandsCanvasMarkers :mapInstance="mapInstance" :markers="bandsMarkers" :zoom="zoom"
             :loadCellsWithBigPRB="loadCellsWithBigPRB" />
           <PreOriginCanvasMarkers :mapInstance="mapInstance" :markers="preOriginMarkers" :zoom="zoom" />
@@ -47,7 +46,7 @@ import 'leaflet/dist/leaflet.css';
 import Header from './Header.vue';
 import LoadingSpinner from './LoadingSpinner.vue';
 import LatLngMarker from './markers/LatLngMarker.vue';
-import SitesMarkers from './markers/SitesMarkers.vue';
+import SitesCanvasMarkers from './markers/SitesCanvasMarkers.vue';
 import BandsCanvasMarkers from './markers/BandsCanvasMarkers.vue';
 import RFPlansCanvasMarkers from './markers/RFPlansCanvasMarkers.vue';
 import ReclamosMarkers from './markers/ReclamosMarkers.vue';
@@ -65,7 +64,7 @@ export default {
     Header,
     LoadingSpinner,
     LatLngMarker,
-    SitesMarkers,
+    SitesCanvasMarkers,
     BandsCanvasMarkers,
     RFPlansCanvasMarkers,
     PreOriginCanvasMarkers,
