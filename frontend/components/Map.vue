@@ -10,7 +10,7 @@
           <BandsCanvasMarkers :mapInstance="mapInstance" :markers="bandsMarkers" :zoom="zoom"
             :loadCellsWithBigPRB="loadCellsWithBigPRB" />
           <PreOriginMarkers :markers="preOriginMarkers" :zoom="zoom" />
-          <RFPlansMarkers :markers="rfPlansMarkers" :zoom="zoom" />
+          <RFPlansCanvasMarkers :mapInstance="mapInstance" :markers="rfPlansMarkers" :zoom="zoom" />
           <ReclamosMarkers :markers="reclamosMarkers" :zoom="zoom" />
           <div v-if="reclamosMarkers && reclamosMarkers.length === 0 && (corpoVipFilter.CORPO || corpoVipFilter.VIP)"
             class="no-markers-msg">
@@ -49,14 +49,14 @@ import LoadingSpinner from './LoadingSpinner.vue';
 import LatLngMarker from './markers/LatLngMarker.vue';
 import SitesMarkers from './markers/SitesMarkers.vue';
 import BandsCanvasMarkers from './markers/BandsCanvasMarkers.vue';
-import RFPlansMarkers from './markers/RFPlansMarkers.vue';
+import RFPlansCanvasMarkers from './markers/RFPlansCanvasMarkers.vue';
 import ReclamosMarkers from './markers/ReclamosMarkers.vue';
 import PreOriginMarkers from './markers/PreOriginMarkers.vue';
 
 import FilterBox from './filterBox/FilterBox.vue';
 import KMZLegends from './filterBox/KMZLegends.vue';
 
-import KMZMethods from './methods/KMZMethods';
+import CoverageMethods from './methods/CoverageMethods';
 import FetchMarkers from './methods/FetchMarkers';
 import OnMapReady from './methods/OnMapReady';
 
@@ -67,29 +67,14 @@ export default {
     LatLngMarker,
     SitesMarkers,
     BandsCanvasMarkers,
-    RFPlansMarkers,
+    RFPlansCanvasMarkers,
     PreOriginMarkers,
     FilterBox,
     KMZLegends,
     ReclamosMarkers
   },
   data() {
-    return {
-      ...DEFAULT_CONFIG,
-      center: [-38, -63],
-      zoom: 4,
-      reclamosMarkers: [],
-      reclamosAll: [],
-      previousZoom: null,
-      groundOverlays: [],
-
-      corpoVipFilter: {
-        CORPO: false,
-        VIP: false
-      },
-      // Controla si se resaltan sitios con alta carga PRB en bandas 4G
-      loadCellsWithBigPRB: false
-    };
+    return { ...DEFAULT_CONFIG };
   },
   computed: {
     url() {
@@ -141,8 +126,8 @@ export default {
     },
     updatefilterByCoverageLTE(newfilterByCoverageLTE) {
       this.filterByCoverageLTE = newfilterByCoverageLTE;
-      this.updateKMZLayer(); // <- Asegura actualización de la capa aunque el zoom no cambie
-      this.filterReclamos();
+      this.updateCoverageLayer(); // <- Asegura actualización de la capa aunque el zoom no cambie
+      this.debouncedFetchReclamos();
     }
   },
   watch: {
@@ -173,14 +158,14 @@ export default {
       deep: true
     },
     filterByCoverageLTE: {
-      handler() {
-        this.updateKMZLayer();
+        handler() {
+          this.updateCoverageLayer();
+        },
+        deep: true
       },
-      deep: true
-    },
     zoom(newZoom) {
-      this.fetchReclamosClusters();
-      this.updateKMZLayer();
+      this.updateCoverageLayer();
+      this.debouncedFetchReclamos();
     },
     corpoVipFilter: {
       handler() {

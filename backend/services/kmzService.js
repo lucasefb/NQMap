@@ -10,7 +10,7 @@ let cachedOverlays = [];
 
 export async function updateKmzCache(extractedBasePath) {
   // Reiniciar lista de overlays cada vez que se regenere
-  coverageOverlays = [];
+  cachedOverlays = [];
   // Detect environment (local or prod) and build KMZ list accordingly
   const APP_ENV = process.env.APP_ENV;
 
@@ -163,7 +163,7 @@ export async function updateKmzCache(extractedBasePath) {
     }
   }
 
-  console.log(`[KMZ] TOTAL overlays cargados: ${coverageOverlays.length}`);
+  console.log(`[KMZ] TOTAL overlays cargados: ${cachedOverlays.length}`);
   console.log('\n📊 Resultado final del cache KMZ:');
   console.log(Object.keys(cachedKmzData));
 }
@@ -177,5 +177,5 @@ export function getKmzData(filename) {
 }
 
 export function getCoverageOverlays() {
-  return coverageOverlays;
+  return cachedOverlays;
 }
