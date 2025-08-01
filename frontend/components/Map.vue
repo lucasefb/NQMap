@@ -1,35 +1,21 @@
 <template>
   <div class="main-container">
     <div class="map-container">
-      <Header
-        :mapInstance="mapInstance"
-        @updateMarkerForLatitudLongitudSearch="updateMarkerForLatitudLongitudSearch"
-      />
+      <Header :mapInstance="mapInstance" @updateMarkerForLatitudLongitudSearch="updateMarkerForLatitudLongitudSearch" />
       <client-only>
-        <l-map
-          ref="map"
-          style="height: 100%; width: 100%;"
-          :zoom="zoom"
-          :center="center"
-          @ready="onMapReady"
-        >
+        <l-map ref="map" style="height: 100%; width: 100%;" :zoom="zoom" :center="center" @ready="onMapReady">
           <l-tile-layer :url="url" :attribution="attribution" />
-          <SitesMarkers
-            v-if="mapInstance"
-            :markersForAllCells="markersForAllCells"
-            :mapInstance="mapInstance"
-            :zoom="zoom"
-          />
-          <BandsCanvasMarkers :mapInstance="mapInstance"
-            :markers="bandsMarkers"
-            :zoom="zoom"
-            :loadCellsWithBigPRB="loadCellsWithBigPRB"
-          />
+          <SitesMarkers v-if="mapInstance" :markersForAllCells="markersForAllCells" :mapInstance="mapInstance"
+            :zoom="zoom" />
+          <BandsCanvasMarkers :mapInstance="mapInstance" :markers="bandsMarkers" :zoom="zoom"
+            :loadCellsWithBigPRB="loadCellsWithBigPRB" />
           <PreOriginMarkers :markers="preOriginMarkers" :zoom="zoom" />
           <RFPlansMarkers :markers="rfPlansMarkers" :zoom="zoom" />
           <ReclamosMarkers :markers="reclamosMarkers" :zoom="zoom" />
-          <div v-if="reclamosMarkers && reclamosMarkers.length === 0 && (corpoVipFilter.CORPO || corpoVipFilter.VIP)" class="no-markers-msg">
-            <span style="color: red; background: #fff; padding: 4px 8px; border-radius: 4px; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 9999;">
+          <div v-if="reclamosMarkers && reclamosMarkers.length === 0 && (corpoVipFilter.CORPO || corpoVipFilter.VIP)"
+            class="no-markers-msg">
+            <span
+              style="color: red; background: #fff; padding: 4px 8px; border-radius: 4px; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 9999;">
               No hay reclamos visibles para el filtro y zona actual
             </span>
           </div>
@@ -37,32 +23,19 @@
         </l-map>
       </client-only>
 
-      <KMZLegends
-        :isAnyRSRPFilterActive="isAnyRSRPFilterActive"
-        :isAnyRSRQFilterActive="isAnyRSRQFilterActive"
-        :isAnyTRPFilterActive="isAnyTRPFilterActive"
-      />
+      <KMZLegends :isAnyRSRPFilterActive="isAnyRSRPFilterActive" :isAnyRSRQFilterActive="isAnyRSRQFilterActive"
+        :isAnyTRPFilterActive="isAnyTRPFilterActive" />
 
       <LoadingSpinner :isLoading="isLoading" />
     </div>
 
-    <FilterBox
-      :filterByCoverageLTE="filterByCoverageLTE"
-      :filterForSolution="filterForSolution"
-      :filterForTechnology="filterForTechnology"
-      :filterForRFPlans="filterForRFPlans"
-      :filterForPreOrigin="filterForPreOrigin"
-      :mapType="mapType"
-      :corpoVipFilter="corpoVipFilter"
-      :urls="urls"
-      :loadCellsWithBigPRB="loadCellsWithBigPRB"
-      @toggleBigPRB="loadCellsWithBigPRB = $event"
-      @updateFilterForSolution="updateFilterForSolution"
-      @updateFilterForTechnology="updateFilterForTechnology"
-      @updatefilterByCoverageLTE="updatefilterByCoverageLTE"
-      @updateMapType="updateMapType"
-      @input="corpoVipFilter = $event"
-    />
+    <FilterBox :filterByCoverageLTE="filterByCoverageLTE" :filterForSolution="filterForSolution"
+      :filterForTechnology="filterForTechnology" :filterForRFPlans="filterForRFPlans"
+      :filterForPreOrigin="filterForPreOrigin" :mapType="mapType" :corpoVipFilter="corpoVipFilter" :urls="urls"
+      :loadCellsWithBigPRB="loadCellsWithBigPRB" @toggleBigPRB="loadCellsWithBigPRB = $event"
+      @updateFilterForSolution="updateFilterForSolution" @updateFilterForTechnology="updateFilterForTechnology"
+      @updatefilterByCoverageLTE="updatefilterByCoverageLTE" @updateMapType="updateMapType"
+      @input="corpoVipFilter = $event" />
   </div>
 </template>
 
@@ -101,8 +74,7 @@ export default {
     ReclamosMarkers
   },
   data() {
-    return {
-      ...DEFAULT_CONFIG};
+    return { ...DEFAULT_CONFIG };
   },
   computed: {
     url() {
@@ -131,7 +103,6 @@ export default {
     }
   },
   methods: {
-
     ...FetchMarkers,
     ...OnMapReady,
     ...KMZMethods,
@@ -154,10 +125,9 @@ export default {
       this.filterForTechnology = newFilterForTechnology;
     },
     updatefilterByCoverageLTE(newfilterByCoverageLTE) {
-  console.log('[padre recibe]', newfilterByCoverageLTE);
       this.filterByCoverageLTE = newfilterByCoverageLTE;
-      this.updateKMZLayer(); // <- Asegura actualización de la capa aunque el zoom no cambie
-      this.filterReclamos();
+      this.updateKMZLayer();
+      this.debouncedFetchReclamos();
     }
   },
   watch: {
@@ -215,12 +185,9 @@ export default {
     this.debouncedFetchBandsMarkers = debounce(this.fetchBandsMarkers, 300);
     this.debouncedFetchPreOriginMarkers = debounce(this.fetchPreOriginMarkers, 300);
     this.debouncedFetchReclamos = debounce(this.fetchReclamos, 300);
-
-    // Fetch reclamos agrupados dinámicamente según bounds y zoom
     this.debouncedFetchReclamos();
   }
 }
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>
