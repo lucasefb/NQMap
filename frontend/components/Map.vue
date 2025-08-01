@@ -9,7 +9,7 @@
             :zoom="zoom" />
           <BandsCanvasMarkers :mapInstance="mapInstance" :markers="bandsMarkers" :zoom="zoom"
             :loadCellsWithBigPRB="loadCellsWithBigPRB" />
-          <PreOriginMarkers :markers="preOriginMarkers" :zoom="zoom" />
+          <PreOriginCanvasMarkers :mapInstance="mapInstance" :markers="preOriginMarkers" :zoom="zoom" />
           <RFPlansCanvasMarkers :mapInstance="mapInstance" :markers="rfPlansMarkers" :zoom="zoom" />
           <ReclamosMarkers :markers="reclamosMarkers" :zoom="zoom" />
           <div v-if="reclamosMarkers && reclamosMarkers.length === 0 && (corpoVipFilter.CORPO || corpoVipFilter.VIP)"
@@ -51,7 +51,7 @@ import SitesMarkers from './markers/SitesMarkers.vue';
 import BandsCanvasMarkers from './markers/BandsCanvasMarkers.vue';
 import RFPlansCanvasMarkers from './markers/RFPlansCanvasMarkers.vue';
 import ReclamosMarkers from './markers/ReclamosMarkers.vue';
-import PreOriginMarkers from './markers/PreOriginMarkers.vue';
+import PreOriginCanvasMarkers from './markers/PreOriginCanvasMarkers.vue';
 
 import FilterBox from './filterBox/FilterBox.vue';
 import KMZLegends from './filterBox/KMZLegends.vue';
@@ -68,7 +68,7 @@ export default {
     SitesMarkers,
     BandsCanvasMarkers,
     RFPlansCanvasMarkers,
-    PreOriginMarkers,
+    PreOriginCanvasMarkers,
     FilterBox,
     KMZLegends,
     ReclamosMarkers

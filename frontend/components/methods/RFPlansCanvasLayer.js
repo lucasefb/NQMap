@@ -40,9 +40,9 @@ export function createRFPlansCanvasLayer() {
       // Mantener canvas alineado con el mapa en todos los movimientos y zooms
       map.on('resize move zoom', this._reset, this);
 
-      // Mouse interactions
-      L.DomEvent.on(this._canvas, 'mousemove', this._onMouseMove, this);
-      L.DomEvent.on(this._canvas, 'mouseleave', this._onMouseLeave, this);
+      // Mouse interactions - escuchar en el mapa para que múltiples capas reciban el evento
+      map.on('mousemove', this._onMouseMove, this);
+      map.on('mouseout', this._onMouseLeave, this);
 
       this._reset();
     },
@@ -51,8 +51,8 @@ export function createRFPlansCanvasLayer() {
       const map = this._map;
       map.getPane('overlayPane').removeChild(this._canvas);
       map.off('resize move zoom', this._reset, this);
-      L.DomEvent.off(this._canvas, 'mousemove', this._onMouseMove, this);
-      L.DomEvent.off(this._canvas, 'mouseleave', this._onMouseLeave, this);
+      map.off('mousemove', this._onMouseMove, this);
+      map.off('mouseout', this._onMouseLeave, this);
     },
 
     _reset: function () {
@@ -106,16 +106,16 @@ export function createRFPlansCanvasLayer() {
     },
 
     _onMouseMove: function (e) {
-      const lp = this._map.mouseEventToLayerPoint(e);
-      const x = lp.x;
-      const y = lp.y;
+      if (!e.containerPoint) return;
+      const x = e.containerPoint.x;
+      const y = e.containerPoint.y;
       const zoom = this._map.getZoom();
       const radius = this._scaleRadius(zoom);
       const hitRadiusSq = radius * radius;
 
       let found = null;
       for (const plan of this._plans) {
-        const p = this._map.latLngToLayerPoint([plan.lat, plan.lng]);
+        const p = this._map.latLngToContainerPoint([plan.lat, plan.lng]);
         const dx = p.x - x;
         const dy = p.y - y;
         if (dx * dx + dy * dy <= hitRadiusSq) {
