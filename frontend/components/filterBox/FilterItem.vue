@@ -1,81 +1,75 @@
 <template>
-    <label class="filter-label">
-        <input type="checkbox"
+  <label class="container">
+    <input type="checkbox"
       v-if="checked !== undefined"
       :checked="checked"
       @change="$emit('update', $event.target.checked)"
     />
     <input type="checkbox"
       v-else
-      v-model="model"
     />
-        <span class="checkmark"></span>
-        <slot></slot>
-    </label>
+    <svg viewBox="0 0 64 64" height="1em" width="1em">
+      <path d="M 0 16 V 56 A 8 8 90 0 0 8 64 H 56 A 8 8 90 0 0 64 56 V 8 A 8 8 90 0 0 56 0 H 8 A 8 8 90 0 0 0 8 V 16 L 32 48 L 64 16 V 8 A 8 8 90 0 0 56 0 H 8 A 8 8 90 0 0 0 8 V 56 A 8 8 90 0 0 8 64 H 56 A 8 8 90 0 0 64 56 V 16" pathLength="575.0541381835938" class="path" />
+    </svg>
+    <span class="label-text"><slot /></span>
+  </label>
 </template>
 
 <script>
 export default {
-  props: {
-    value: Boolean,
-    checked: Boolean
-  },
-  computed: {
-    model: {
-      get() {
-        return this.value !== undefined ? this.value : this.checked;
-      },
-      set(val) {
-        this.$emit('update', val);
-        this.$emit('input', val);
-      }
+props: {
+  value: Boolean,
+  checked: Boolean
+},
+computed: {
+  model: {
+    get() {
+      return this.value !== undefined ? this.value : this.checked;
+    },
+    set(val) {
+      this.$emit('update', val);
+      this.$emit('input', val);
     }
   }
+}
 }
 </script>
 
 <style scoped>
-.filter-label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    margin-bottom: 5px;
-    font-size: 1em;
-    color: #333;
+.container {
+display: flex;
+align-items: center;
+cursor: pointer;
+margin-bottom: 6px;
 }
 
-input[type="checkbox"] {
-    display: none;
+.container input {
+  display: none;
 }
 
-.checkmark {
-    height: 18px;
-    width: 18px;
-    background-color: #ddd;
-    border-radius: 3px;
-    margin-right: 10px;
-    display: inline-block;
-    position: relative;
+.label-text {
+  margin-left: 8px;
+  font-size: 0.7em;
+  color: #fff;
 }
 
-input[type="checkbox"]:checked+.checkmark {
-    background-color: #222A75;
+.container svg {
+  overflow: visible;
 }
 
-.checkmark::after {
-    content: '';
-    position: absolute;
-    display: none;
-    left: 6px;
-    top: 2px;
-    width: 5px;
-    height: 10px;
-    border: solid white;
-    border-width: 0 3px 3px 0;
-    transform: rotate(45deg);
+.path {
+  fill: none;
+  stroke: white;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease;
+  stroke-dasharray: 241 9999999;
+  stroke-dashoffset: 0;
 }
 
-input[type="checkbox"]:checked+.checkmark::after {
-    display: block;
+.container input:checked ~ svg .path {
+  stroke-dasharray: 70.5096664428711 9999999;
+  stroke-dashoffset: -262.2723388671875;
 }
 </style>
