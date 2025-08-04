@@ -31,7 +31,7 @@ const ONE_DAY = 24 * 60 * 60 * 1000;
 setInterval(updateCache, ONE_DAY);
 
 updateCache().then(() => {
-  console.log('✅ Cache inicial cargado');
+
 }).catch(err => {
   console.error('❌ Error al cargar cache inicial:', err);
 });
