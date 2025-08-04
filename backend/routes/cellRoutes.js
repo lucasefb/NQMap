@@ -1,11 +1,11 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 import { updateCache, cachedData } from '../services/cacheUpdater.js';
 import { getCellsByBoundsAndBands } from '../services/cacheUtils.js';
-import { getKmzData, getAllOverlays } from '../services/kmzService.js';
 
 const router = express.Router();
 
-// Nuevo: Middleware por tipo de dato
 const ensureCache = async (req, res, next) => {
   if (!cachedData.lastUpdated) {
     await updateCache();
@@ -196,36 +196,6 @@ router.get('/planesrf', ensureCache, (req, res) => {
   }
 });
 
-
-router.get('/get-kmz/:filename', async (req, res) => {
-  try {
-    const filename = req.params.filename;
-    const data = getKmzData(filename);
-
-    if (!data) {
-      return res.status(404).json({ error: 'Archivo no encontrado' });
-    }
-
-    res.json({ kml: data.kmzJson });
-  } catch (err) {
-    console.error('Error al obtener KMZ:', err);
-    res.status(500).json({ error: 'Error interno al leer KMZ' });
-  }
-});
-
-// --- NUEVO: Endpoint de overlays de cobertura 4G ---
-router.get('/coverage4g', (req, res) => {
-  try {
-    const data = getAllOverlays();
-
-    res.json(data);
-  } catch (err) {
-    console.error('Error al obtener overlays:', err);
-    res.status(500).json({ error: 'Error interno overlays' });
-  }
-});
-
-// --- NUEVO: Endpoint para reclamos ---
 router.get('/reclamosByBounds', async (req, res) => {
   try {
     const { neLat, neLng, swLat, swLng, tipos } = req.query;
@@ -293,6 +263,39 @@ router.get('/reclamosByBounds', async (req, res) => {
   } catch (err) {
     console.error('Error en /reclamosByBounds:', err);
     res.status(500).json({ error: 'Error obteniendo reclamos por bounds' });
+  }
+});
+
+router.get('/coverage4g-python', (req, res) => {
+  try {
+    
+    // Ruta al archivo JSON generado por el script de Python
+    const overlaysFilePath = path.join(process.cwd(), 'extracted', 'coverage_overlays.json');
+    
+    if (!fs.existsSync(overlaysFilePath)) {
+      console.warn('Archivo de overlays no encontrado:', overlaysFilePath);
+      return res.json([]);
+    }
+    
+    const overlaysData = JSON.parse(fs.readFileSync(overlaysFilePath, 'utf-8'));
+    
+    // Ajustar URLs según el entorno
+    const APP_ENV = process.env.APP_ENV;
+    const defaultLocal = process.env.API_BASE_URL_LOCAL || 'http://localhost:3000';
+    const baseUrl = APP_ENV === 'prod' ? (process.env.API_BASE_URL_PROD || '') : defaultLocal;
+    
+    // Actualizar URLs de imágenes con la URL base correcta
+    const adjustedOverlays = overlaysData.map(overlay => ({
+      ...overlay,
+      imageUrl: overlay.imageUrl.replace('http://localhost:3000', baseUrl)
+    }));
+    
+    console.log(`Sirviendo ${adjustedOverlays.length} overlays procesados por Python`);
+    res.json(adjustedOverlays);
+    
+  } catch (error) {
+    console.error('Error sirviendo overlays procesados por Python:', error);
+    res.status(500).json({ error: 'Error cargando overlays procesados' });
   }
 });
 

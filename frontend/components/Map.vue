@@ -100,7 +100,7 @@ export default {
     },
     isAnyTRPFilterActive() {
       return Object.entries(this.filterByCoverageLTE).some(
-        ([key, value]) => key.toUpperCase().includes('AVG_TH_DL') && value
+        ([key, value]) => key.toUpperCase().includes('TH_DL') && value
       );
     }
   },

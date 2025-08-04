@@ -79,49 +79,30 @@
       </FilterGroup>
 
       
-      <FilterGroup title="Cobertura 4G" @toggleGroup="toggle('Arieso')">
-        <FilterGroup
-          title="Intensidad (RSRP)"
-          :selectable="false"
+      <FilterGroup title="Cobertura 4G" @toggleGroup="toggle('Arieso')" :selectable="false">
+        <!-- Intensidad (RSRP) -->
+        <FilterItem
+          :checked="filterByCoverageLTE.RSRP"
+          @update="updateFilter(filterByCoverageLTE, 'RSRP', $event)"
         >
-          <FilterItem
-            v-for="key in rsrpKeys"
-            :key="key"
-            :checked="filterByCoverageLTE[key]"
-            @update="update4G(key, $event)"
-          >
-            {{ key.replace('LTE RSRP', '').replace('.kmz', '').trim() }}
-          </FilterItem>
+          Intensidad (RSRP)
+        </FilterItem>
 
-        </FilterGroup>
-
-        <FilterGroup
-          title="Calidad (RSRQ)"
-          :selectable="false"
+        <!-- Calidad (RSRQ) -->
+        <FilterItem
+          :checked="filterByCoverageLTE.RSRQ"
+          @update="updateFilter(filterByCoverageLTE, 'RSRQ', $event)"
         >
-          <FilterItem
-            v-for="key in rsrqKeys"
-            :key="key"
-            :checked="filterByCoverageLTE[key]"
-            @update="update4G(key, $event)"
-          >
-            {{ key.replace('LTE RSRQ', '').replace('.kmz', '').trim() }}
-          </FilterItem>
-        </FilterGroup>
+          Calidad (RSRQ)
+        </FilterItem>
 
-        <FilterGroup
-          title="Throughput (TRP)"
-          :selectable="false"
+        <!-- Throughput (TRP) -->
+        <FilterItem
+          :checked="filterByCoverageLTE.TH_DL"
+          @update="updateFilter(filterByCoverageLTE, 'TH_DL', $event)"
         >
-          <FilterItem
-            v-for="key in trpKeys"
-            :key="key"
-            :checked="filterByCoverageLTE[key]"
-            @update="update4G(key, $event)"
-          >
-            {{ key.replace('LTE Avg_TH_DL', '').replace('.kmz', '').trim() }}
-          </FilterItem>
-        </FilterGroup>
+          Throughput (TRP)
+        </FilterItem>
       </FilterGroup>
     </div>
 
@@ -248,7 +229,16 @@ export default {
     updateFilter(group, key, value) {
       this.$set(group, key, value);
       if (group === this.filterByCoverageLTE) {
-        this.$emit('updatefilterByCoverageLTE', group);
+        // Hacer que RSRP / RSRQ / TH_DL sean mutuamente excluyentes
+        if (value) {
+          Object.keys(group).forEach(k => {
+            this.$set(group, k, k === key);
+          });
+        } else {
+          this.$set(group, key, false);
+        }
+        this.$emit('updatefilterByCoverageLTE', { ...group });
+        return;
       }
     },
     // ...
@@ -275,10 +265,7 @@ export default {
       // Agregar esta línea para forzar desactivar alta carga cuando se selecciona un filtro 4G
       this.$emit('toggleBigPRB', false);
     },
-    /**
-     * Devuelve un objeto con las claves del objeto original que contienen el keyword.
-     * Se usa para separar RSRP, RSRQ y TH_DL.
-     */
+
     extractSubset(original, keyword) {
       const subset = {};
       for (const key in original) {
@@ -288,6 +275,7 @@ export default {
       }
       return subset;
     },
+    
     toggleMapType() {
       const types = ["roadmap", "satellite", "carto"];
       const next = types[(types.indexOf(this.mapType) + 1) % types.length];
