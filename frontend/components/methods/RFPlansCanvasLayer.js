@@ -145,3 +145,5 @@ export function createRFPlansCanvasLayer() {
     },
   });
 }
+
+export default {}

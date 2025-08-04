@@ -137,3 +137,5 @@ export function createReclamosCanvasLayer() {
     }
   });
 }
+
+export default {}

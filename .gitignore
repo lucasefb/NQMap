@@ -10,6 +10,7 @@ pnpm-debug.log*
 
 # Backend
 backend/extracted/
+backend/arieso/
 
 # Logs
 *.log

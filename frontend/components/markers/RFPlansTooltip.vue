@@ -17,7 +17,6 @@ export default {
   },
   methods: {
     showTooltip(marker) {
-      console.log('marker RFPlansTooltip:', marker);
       this.tooltipContent = `
         <div class="rfplans-tooltip-inner">
           <div><b>Tipo:</b> ${marker.nombre || ''}</div>

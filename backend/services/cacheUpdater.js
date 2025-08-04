@@ -1,4 +1,6 @@
 import oracledb from 'oracledb';
+import fs from 'fs';
+import path from 'path';
 import { queries } from './queries.js';
 import {
   dbTableau,
@@ -57,6 +59,10 @@ export const cachedData = {
   reclamosAcciones: null,
   reclamosNormalizados: null,
   reclamosSuperCluster: null,
+
+  // Coverage overlays
+  coverageOverlays: null,
+  coverageOverlaysReady: false,
 
   lastUpdated: null,
 };
@@ -140,6 +146,12 @@ export async function updateCache() {
     cachedData.cellsByNombre = buildCellsByNombre(cachedData.allCellsAllInfo);
     cachedData.superCluster  = buildSupercluster(cachedData.allCellsAllInfo);
 
+    // Cargar overlays de cobertura de forma síncrona
+    console.log('🚀 Iniciando carga de overlays de cobertura...');
+    const startTime = Date.now();
+    await loadCoverageOverlays();
+    const endTime = Date.now();
+
     // Flags & timestamp
     cachedData.sitesReady      = true;
     cachedData.preOriginReady  = true;
@@ -160,10 +172,6 @@ export async function updateCache() {
   loadReclamos();
 }
 
-/**
- * Carga y normaliza reclamos + acciones, luego genera supercluster.
- * Se ejecuta de forma desacoplada para no demorar la carga principal.
- */
 async function loadReclamos() {
   let conn;
   try {
@@ -221,6 +229,29 @@ async function loadReclamos() {
     console.error('❌ Error cargando reclamos:', e);
   } finally {
     if (conn) try { await conn.close(); } catch (_) {}
+  }
+}
+
+async function loadCoverageOverlays() {
+  try {
+    const overlaysFilePath = path.join(process.cwd(), 'extracted', 'coverage_overlays.json');
+
+    if (!fs.existsSync(overlaysFilePath)) {
+      console.warn('⚠️ Archivo de overlays no encontrado:', overlaysFilePath);
+      cachedData.coverageOverlays = [];
+      return;
+    }
+    
+    const fileContent = fs.readFileSync(overlaysFilePath, 'utf-8');
+    
+    const overlaysData = JSON.parse(fileContent);
+    cachedData.coverageOverlays = overlaysData;
+    cachedData.coverageOverlaysReady = true;
+    console.log(`✅ Cargados ${overlaysData.length} overlays de cobertura en cache`);
+    
+  } catch (e) {
+    console.error('❌ Error cargando overlays de cobertura:', e);
+    cachedData.coverageOverlays = [];
   }
 }
 

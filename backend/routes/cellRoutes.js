@@ -266,31 +266,57 @@ router.get('/reclamosByBounds', async (req, res) => {
   }
 });
 
-router.get('/coverage4g-python', (req, res) => {
+// Devuelve overlays de cobertura 4G procesados por Python, con filtrado opcional por bounding box
+router.get('/coverage4g-python', ensureCache, (req, res) => {
   try {
+    let overlaysData;
     
-    // Ruta al archivo JSON generado por el script de Python
-    const overlaysFilePath = path.join(process.cwd(), 'extracted', 'coverage_overlays.json');
-    
-    if (!fs.existsSync(overlaysFilePath)) {
-      console.warn('Archivo de overlays no encontrado:', overlaysFilePath);
-      return res.json([]);
+    // Usar cache si está disponible, sino leer del archivo
+    if (cachedData.coverageOverlaysReady && cachedData.coverageOverlays) {
+      overlaysData = cachedData.coverageOverlays;
+    } else {
+      // Fallback: leer del archivo (cache no listo aún)
+      const overlaysFilePath = path.join(process.cwd(), 'extracted', 'coverage_overlays.json');
+      
+      if (!fs.existsSync(overlaysFilePath)) {
+        console.warn('Archivo de overlays no encontrado:', overlaysFilePath);
+        return res.json([]);
+      }
+      
+      overlaysData = JSON.parse(fs.readFileSync(overlaysFilePath, 'utf-8'));
     }
-    
-    const overlaysData = JSON.parse(fs.readFileSync(overlaysFilePath, 'utf-8'));
+
+    // Filtrado por bounding-box si se envían los parámetros
+    const { neLat, neLng, swLat, swLng } = req.query;
+    const hasBbox = neLat && neLng && swLat && swLng;
+    if (hasBbox) {
+      const neLatNum = parseFloat(neLat);
+      const neLngNum = parseFloat(neLng);
+      const swLatNum = parseFloat(swLat);
+      const swLngNum = parseFloat(swLng);
+      overlaysData = overlaysData.filter(ov => {
+        const [south, west, north, east] = ov.bounds;
+        // No intersecar => descartar
+        return !(east < swLngNum || west > neLngNum || north < swLatNum || south > neLatNum);
+      });
+    }
     
     // Ajustar URLs según el entorno
     const APP_ENV = process.env.APP_ENV;
-    const defaultLocal = process.env.API_BASE_URL_LOCAL || 'http://localhost:3000';
-    const baseUrl = APP_ENV === 'prod' ? (process.env.API_BASE_URL_PROD || '') : defaultLocal;
+    // Base URLs según entorno
+    const localBaseUrl = process.env.API_BASE_URL_LOCAL;
+    const prodBaseUrl  = process.env.API_BASE_URL_PROD;
+    const baseUrl = APP_ENV === 'prod' ? prodBaseUrl : localBaseUrl;
     
     // Actualizar URLs de imágenes con la URL base correcta
     const adjustedOverlays = overlaysData.map(overlay => ({
       ...overlay,
-      imageUrl: overlay.imageUrl.replace('http://localhost:3000', baseUrl)
+      // Reemplazar cualquier referencia a las URLs base conocidas por la del entorno actual
+      imageUrl: overlay.imageUrl
+        .replace(localBaseUrl, baseUrl)
+        .replace(prodBaseUrl,  baseUrl)
     }));
     
-    console.log(`Sirviendo ${adjustedOverlays.length} overlays procesados por Python`);
     res.json(adjustedOverlays);
     
   } catch (error) {

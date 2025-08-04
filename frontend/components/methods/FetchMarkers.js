@@ -52,7 +52,6 @@ export default {
           };
         }
       }).filter(Boolean);
-      console.log('[CLUSTER-DEBUG] Markers normalizados:', normalizedMarkers.slice(0, 5));
 
       // --- Chequeo de duplicados en markers normalizados ---
       const keySet = new Set();
@@ -78,12 +77,9 @@ export default {
           const dups = normalizedMarkers.filter(m => (m.isCluster ? `cluster_${m.cluster_id}_${m.solution}` : `site_${m.nombre}_${m.lat}_${m.lng}_${m.solution}`) === dup.key);
           console.warn(`[FetchMarkers] Objetos duplicados para key '${dup.key}':`, dups);
         });
-      } else {
-        console.log('[CLUSTER-DEBUG] No se detectaron claves duplicadas en markers normalizados.');
       }
       this.markersForAllCells = [];
       this.markersForAllCells = normalizedMarkers;
-      console.log('[CLUSTER-DEBUG] markersForAllCells FINAL:', this.markersForAllCells.length);
 
     } catch (error) {
       console.error('Error fetching clustered markers:', error);
@@ -189,9 +185,6 @@ export default {
           });
         });
       }
-
-      console.log('[PREORIGIN FILTERS]', this.filterForPreOrigin);
-      console.log('[PREORIGIN DATA]', normalized.slice(0, 5));
 
       this.preOriginMarkers = normalized;
     } catch (error) {

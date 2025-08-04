@@ -17,7 +17,6 @@ export default {
   },
   methods: {
     showTooltip(marker) {
-      console.log('PreOriginTooltip showTooltip marker:', marker);
       this.tooltipContent = `
         <div class="preorigin-tooltip-inner">
           <div><b>Tipo:</b> ${marker.tipo || ''}</div>

@@ -127,7 +127,6 @@ export function createBandsCanvasLayer() {
 
     // Método para actualizar las bandas
     setBands: function(bands) {
-      const previousCount = this._bands.length;
       this._bands = bands;
       
       if (bands.length > 0) {
@@ -137,12 +136,6 @@ export function createBandsCanvasLayer() {
           const tech = band.tecnologia.trim();
           techCount[tech] = (techCount[tech] || 0) + 1;
         });
-        
-        const techInfo = Object.entries(techCount)
-          .map(([tech, count]) => `${tech}: ${count}`)
-          .join(', ');
-        
-        console.log(`[Canvas] 📡 Actualizando bandas: ${previousCount} → ${bands.length} (${techInfo})`);
       }
       
       this._reset();
@@ -205,14 +198,6 @@ export function createBandsCanvasLayer() {
           bandsDrawn++;
         }
       });
-      
-      const drawTime = performance.now() - startTime;
-      
-      // Información más detallada del rendimiento
-      if (bandsDrawn > 0) {
-        const fps = Math.round(1000 / drawTime);
-        console.log(`[Canvas] ✅ ${bandsDrawn} bandas dibujadas en ${drawTime.toFixed(1)}ms (~${fps} FPS) | ${(drawTime/bandsDrawn).toFixed(2)}ms por banda`);
-      }
     },
 
     // Dibuja una banda individual

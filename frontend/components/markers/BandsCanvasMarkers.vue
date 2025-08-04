@@ -56,7 +56,6 @@ export default {
     
     markers(newMarkers) {
       if (this.canvasLayer && newMarkers) {
-        console.log(`[SimpleCanvas] Actualizando ${newMarkers.length} bandas`);
         this.canvasLayer.setBands(newMarkers);
       }
     },
@@ -76,14 +75,11 @@ export default {
       
       // Verificamos que tengamos todo lo necesario
       if (!window.L || !this.mapInstance) {
-        console.log('[SimpleCanvas] Esperando Leaflet o mapInstance...');
         setTimeout(() => this.initialize(), 100);
         return;
       }
       
-      try {
-        console.log('[SimpleCanvas] Inicializando capa de canvas...');
-        
+      try {    
         // Importamos y creamos la capa
         const { createBandsCanvasLayer } = await import('../methods/BandsCanvasLayer.js');
         const BandsCanvasLayerClass = createBandsCanvasLayer();
@@ -120,7 +116,6 @@ export default {
         }
         
         this.isInitialized = true;
-        console.log('[SimpleCanvas] Inicialización completa');
         
       } catch (error) {
         console.error('[SimpleCanvas] Error:', error);

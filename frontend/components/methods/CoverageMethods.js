@@ -101,32 +101,42 @@ function createCoverageCanvasLayer() {
 
 // Main logic for handling KMZ overlays
 export default {
-  async loadCoverageOverlays() {
+  // Descarga overlays visibles al viewport actual y actualiza la capa
+async loadCoverageOverlays() {
+    // Evitar múltiples llamadas simultáneas
+    if (this._loadingCoverage) return;
     
+    // Solo cargar si el zoom es suficiente
+    if (this.mapInstance && this.mapInstance.getZoom() < 12) {
+      return;
+    }
 
-    if (this.coverageOverlays && this.coverageOverlays.length) return;
+    this._loadingCoverage = true;
+    
     try {
-      const res = await this.$axios.get(`${API_BASE_URL}/api/coverage4g-python`);
+      if (!this.mapInstance) return;
+    const b = this.mapInstance.getBounds();
+    const params = {
+      neLat: b.getNorthEast().lat,
+      neLng: b.getNorthEast().lng,
+      swLat: b.getSouthWest().lat,
+      swLng: b.getSouthWest().lng,
+    };
+    const res = await this.$axios.get(`${API_BASE_URL}/api/coverage4g-python`, { params });
       
       this.coverageOverlays = res.data;
-      if (this.coverageOverlays.length === 0) {
-        console.log('No se encontraron overlays procesados por Python, reintentando...');
-        setTimeout(() => {
-          // limpiar para que vuelva a llamar
-          this.coverageOverlays = null;
-          this.loadCoverageOverlays();
-        }, 3000);
-        return;
-      }
-      
-      console.log(`Cargados ${this.coverageOverlays.length} overlays procesados por Python`);
+    // Si la capa ya existe, actualizarla al vuelo
+    if (this.coverageLayer) {
+      this.coverageLayer.setOverlays(this.coverageOverlays);
+      this._setActiveKeys();
+    }
       
       // Intentar crear la capa si el mapa ya está listo
       this._createCoverageLayerIfPossible();
     } catch (e) {
-      console.error('Error cargando overlays procesados por Python:', e);
-      // Si falla, volver a intentar en 5 segundos
-      setTimeout(() => this.loadCoverageOverlays(), 5000);
+      console.error('Error cargando overlays:', e);
+    } finally {
+      this._loadingCoverage = false;
     }
   },
 

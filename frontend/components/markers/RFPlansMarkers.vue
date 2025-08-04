@@ -49,7 +49,6 @@ export default {
     }
   },
   mounted() {
-    console.log('[RFPlansMarkers] mounted, markers:', this.markers);
   },
   props: {
     markers: Array,
@@ -82,11 +81,9 @@ export default {
       });
     },
     showTooltip(marker) {
-      console.log('[RFPlansMarkers] showTooltip marker:', marker);
       this.$refs.rfTooltipRef?.showTooltip(marker);
     },
     hideTooltip() {
-      console.log('[RFPlansMarkers] hideTooltip');
       this.$refs.rfTooltipRef?.hideTooltip();
     },
   },

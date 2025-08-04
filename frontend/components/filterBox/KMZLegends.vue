@@ -58,12 +58,9 @@ export default {
         '#89e59a': "-8 to 0"
       },
       trpLegend: {
-        '#000000': "0 to 1 Mbps",
-        '#e60000': "1 to 3 Mbps",
-        '#ffe766': "3 to 5 Mbps",
-        '#8797f1': "5 to 10 Mbps",
-        '#6ff7f0': "10 to 20 Mbps",
-        '#89e59a': "20+ Mbps"
+        '#e60000': "0 to 4 Mbps",
+        '#ffe766': "4 to 10 Mbps",
+        '#8797f1': "10+ Mbps",
       }
     };
   }

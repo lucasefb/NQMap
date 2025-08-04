@@ -151,6 +151,19 @@ export function createSitesCanvasLayer() {
         this.fire('siteout', { site: this._hovered });
         this._hovered = null;
       }
+    },
+
+    _onClick: function (e) {
+      if (!e.containerPoint) return;
+      const { x, y } = e.containerPoint;
+      for (const s of this._sites) {
+        if (this._hitTest(s, x, y)) {
+          this.fire('siteclick', { site: s });
+          break;
+        }
+      }
     }
   });
 }
+
+export default {}

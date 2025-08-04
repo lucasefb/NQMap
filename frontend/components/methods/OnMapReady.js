@@ -11,7 +11,7 @@ export default {
     });
 
     rulerControl.addTo(this.mapInstance);
-    
+
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && rulerControl._measuring) {
         rulerControl._measuring = false;
@@ -20,17 +20,18 @@ export default {
     });
 
     // Crear capa coverage si ya tenemos overlays descargados
-  if (typeof this._createCoverageLayerIfPossible === 'function') {
-    this._createCoverageLayerIfPossible();
-  }
+    if (typeof this._createCoverageLayerIfPossible === 'function') {
+      this._createCoverageLayerIfPossible();
+    }
 
-  this.mapInstance.on('moveend', async () => {
+    this.mapInstance.on('moveend', async () => {
       const newCenter = this.mapInstance.getCenter();
       if (!newCenter.equals(this._lastCenter)) {
         await this.fetchMarkers();
         await this.fetchBandsMarkers();
         await this.fetchPreOriginMarkers();
         await this.fetchRFPlansMarkers();
+        await this.loadCoverageOverlays();
       }
     });
   },
