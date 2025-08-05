@@ -24,17 +24,17 @@
           <small>{{ (marker.fecha || '').slice(0,10) || 'Sin fecha' }}</small>
         </div>
       </l-tooltip>
-      <RFPlansTooltip ref="rfTooltipRef" />
+      <Tooltip ref="rfTooltipRef" extraClass="rfplans-tooltip" />
     </l-marker>
   </div>
 </template>
 
 <script>
-import RFPlansTooltip from './RFPlansTooltip.vue';
+import Tooltip from '~/components/Tooltip.vue';
 
 export default {
   components: {
-    RFPlansTooltip
+    Tooltip
   },
   watch: {
     markers(newVal) {
@@ -80,11 +80,20 @@ export default {
         className: 'custom-icon-class',
       });
     },
-    showTooltip(marker) {
-      this.$refs.rfTooltipRef?.showTooltip(marker);
+    showTooltip(marker, ev) {
+      const html = `
+        <div class="rfplans-tooltip-inner">
+          <div><b>Tipo:</b> ${marker.nombre || ''}</div>
+          <div><b>Latitud:</b> ${marker.lat || ''}</div>
+          <div><b>Longitud:</b> ${marker.lng || ''}</div>
+          <div><b>Estado del Plan:</b> ${marker.fecha || ''}</div>
+        </div>`;
+      this.$refs.rfTooltipRef?.show(html, ev);
     },
     hideTooltip() {
-      this.$refs.rfTooltipRef?.hideTooltip();
+      if (!this.$refs.rfTooltipRef?.pinned) {
+        this.$refs.rfTooltipRef?.hide();
+      }
     },
   },
   computed: {

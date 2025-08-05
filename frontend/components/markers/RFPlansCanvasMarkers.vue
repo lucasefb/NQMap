@@ -1,16 +1,16 @@
 <template>
   <div>
-    <RFPlansTooltip ref="tooltipRef" />
+    <Tooltip ref="tooltipRef" extraClass="rfplans-tooltip" />
   </div>
 </template>
 
 <script>
-import RFPlansTooltip from './RFPlansTooltip.vue';
+import Tooltip from '~/components/Tooltip.vue';
 
 export default {
   name: 'RFPlansCanvasMarkers',
   components: {
-    RFPlansTooltip,
+    Tooltip,
   },
   props: {
     markers: {
@@ -52,6 +52,21 @@ export default {
     }
   },
   methods: {
+    showTooltip(marker, ev) {
+      const html = `
+        <div class="rfplans-tooltip-inner">
+          <div><b>Tipo:</b> ${marker.nombre || ''}</div>
+          <div><b>Latitud:</b> ${marker.lat || ''}</div>
+          <div><b>Longitud:</b> ${marker.lng || ''}</div>
+          <div><b>Estado del Plan:</b> ${marker.fecha || ''}</div>
+        </div>`;
+      this.$refs.tooltipRef?.show(html, ev);
+    },
+    hideTooltip() {
+      if (!this.$refs.tooltipRef?.pinned) {
+        this.$refs.tooltipRef?.hide();
+      }
+    },
     async initialize() {
       if (this.isInitialized || !process.client) return;
 
@@ -66,10 +81,10 @@ export default {
         this.canvasLayer = new RFPlansCanvasLayerClass();
 
         this.canvasLayer.on('planover', (e) => {
-          this.$refs.tooltipRef?.showTooltip(e.plan);
+          this.showTooltip(e.plan, e.event);
         });
         this.canvasLayer.on('planout', () => {
-          this.$refs.tooltipRef?.hideTooltip();
+          this.hideTooltip();
         });
 
         this.mapInstance.addLayer(this.canvasLayer);
