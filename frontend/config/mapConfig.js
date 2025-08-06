@@ -43,9 +43,10 @@ export const DEFAULT_CONFIG = {
     Femto: false,
   },
   filterByCoverageLTE: {
-    RSRP: false,  // Signal Intensity
-    RSRQ: false,  // Signal Quality
-    TH_DL: false  // Throughput (TRP)
+    RSRP: false,
+    RSRQ: false,
+    TH_DL: false,
+    INDOOR: false
   },
   showRFplans: false,
   showOrigin: false,

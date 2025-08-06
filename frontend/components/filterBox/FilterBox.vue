@@ -103,6 +103,14 @@
         >
           Throughput (TRP)
         </FilterItem>
+
+        <!-- Indoor -->
+        <FilterItem
+          :checked="filterByCoverageLTE.INDOOR"
+          @update="updateFilter(filterByCoverageLTE, 'INDOOR', $event)"
+        >
+          Indoor
+        </FilterItem>
       </FilterGroup>
     </div>
 
