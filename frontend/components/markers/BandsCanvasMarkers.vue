@@ -72,8 +72,8 @@ export default {
     showTooltip(marker, ev) {
       const html = `
         <div>
-          <h2>${marker.nombre}</h2>
-          <ul style="padding-left:20px;list-style-type:none;margin:0;">
+          <ul style=list-style-type:none>
+            <li><strong>Banda:</strong> ${marker.nombre}</li>
             <li><strong>Latitud:</strong> ${marker.lat}</li>
             <li><strong>Longitud:</strong> ${marker.lng}</li>
             <li><strong>Banda:</strong> ${marker.banda}</li>

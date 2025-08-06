@@ -1,21 +1,14 @@
 <template>
   <div
-    :class="['generic-tooltip', extraClass, { pinned }]"
+    :class="['generic-tooltip', extraClass]"
     v-show="visible"
-    @click.stop="togglePin"
     ref="tooltipRoot"
   >
-    <button
-      v-if="pinned"
-      class="tooltip-close"
-      @click.stop="unpin"
-    >×</button>
-
-    <!-- default slot for custom markup -->
-    <slot v-if="$slots.default"></slot>
-
-    <!-- or raw HTML string -->
-    <div v-else v-html="tooltipContent"></div>
+    <div class="tooltip-content">
+      <div v-if="tooltipTitle" class="tooltip-title">{{ tooltipTitle }}</div>
+      <slot v-if="$slots.default"></slot>
+      <div v-else v-html="tooltipContent"></div>
+    </div>
   </div>
 </template>
 
@@ -23,7 +16,6 @@
 export default {
   name: 'Tooltip',
   props: {
-    /* Optional extra class (e.g. 'bands-tooltip') for custom width/effects */
     extraClass: {
       type: String,
       default: '',
@@ -33,81 +25,115 @@ export default {
     return {
       tooltipContent: '',
       visible: false,
-      pinned: false,
+      side: 'left',
+      tooltipTitle: '',
     };
   },
   methods: {
-    /**
-     * Show tooltip with provided HTML or pass null to use slot.
-     * @param {String|null} html HTML string
-     * @param {MouseEvent} [ev] optional event for positioning
-     */
     show(html, ev) {
+      if (this.extraClass && this.extraClass.includes('rfplans-tooltip')) {
+        this.side = 'right';
+        this.tooltipTitle = 'RF Plans';
+      } else if (this.extraClass && this.extraClass.includes('preorigin-tooltip')) {
+        this.side = 'left';
+        this.tooltipTitle = 'Pre-Origin';
+      } else if (this.extraClass && this.extraClass.includes('bands-tooltip')) {
+        this.side = 'center';
+        this.tooltipTitle = 'Bandas';
+      } else {
+        if (!window.__tooltipSideToggle) window.__tooltipSideToggle = false;
+        this.side = window.__tooltipSideToggle ? 'right' : 'left';
+        window.__tooltipSideToggle = !window.__tooltipSideToggle;
+        this.tooltipTitle = '';
+      }
+
       if (html !== null) this.tooltipContent = html;
       this.visible = true;
-      if (!this.pinned) {
-        document.addEventListener('mousemove', this.updatePosition);
-      }
+      // Añadir clase al body para cambiar el cursor mientras el tooltip esté visible
+      document.body.classList.add('cursor-tooltip');
+      document.addEventListener('mousemove', this.updatePosition);
       if (ev) this.updatePosition(ev);
     },
     hide() {
-      if (this.pinned) return;
       this.visible = false;
+      // Quitar la clase del body cuando el tooltip se oculta
+      document.body.classList.remove('cursor-tooltip');
       document.removeEventListener('mousemove', this.updatePosition);
-    },
-    /** Fix/unfix tooltip on click */
-    togglePin() {
-      this.pinned = !this.pinned;
-      if (this.pinned) {
-        document.removeEventListener('mousemove', this.updatePosition);
-      } else {
-        document.addEventListener('mousemove', this.updatePosition);
-      }
-    },
-    unpin() {
-      this.pinned = false;
-      this.hide();
     },
     updatePosition(ev) {
       const el = this.$refs.tooltipRoot;
       if (!el) return;
-      el.style.left = `${ev.pageX + 10}px`;
-      el.style.top = `${ev.pageY + 10}px`;
+
+      const tooltipWidth = el.offsetWidth || 150;
+      const spacing = 5;
+      const offsetY = 25;
+
+      let left;
+      if (this.side === 'left') {
+        left = ev.pageX - tooltipWidth - spacing;
+      } else if (this.side === 'right') {
+        left = ev.pageX + spacing;
+      } else {
+        left = ev.pageX - tooltipWidth / 2;
+      }
+
+      const maxLeft = document.documentElement.clientWidth - tooltipWidth - 10;
+      if (left < 10) left = 10;
+      if (left > maxLeft) left = maxLeft;
+
+      el.style.left = `${left}px`;
+      el.style.top = `${ev.pageY + offsetY}px`;
+
+
     },
   },
 };
 </script>
 
 <style>
+.generic-tooltip,
 .bands-tooltip,
 .preorigin-tooltip,
 .rfplans-tooltip,
 .custom-tooltip,
 .leaflet-tooltip {
   position: absolute;
-  background: rgba(225, 232, 255, 0.986);
-  color: #222;
+  background: rgba(225, 232, 255, 0.65);
+  backdrop-filter: blur(3px); 
+  -webkit-backdrop-filter: blur(3px);
   border: 1px solid #bbb;
-  padding: 10px 14px;
   border-radius: 7px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  pointer-events: auto; /* allow click interactions */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
   z-index: 1000;
   max-width: 300px;
-  font-family: 'Poppins';
+  font-family: 'Rubik', sans-serif;
   font-size: 14px;
   line-height: 1.4;
-  /* animation will be declared below */
-}
-
-/* Inner container styling if needed */
-.bands-tooltip-inner,
-.preorigin-tooltip-inner,
-.rfplans-tooltip-inner {
+  animation: scale-estreme 0.2s ease-out;
+  transform-origin: top center;
   padding: 0;
 }
+.tooltip-content {
+  padding: 10px 14px;
+  color: #222;
+  background: transparent;
+  
+}
 
-/* ---- Global Tooltip Animation (scale & fade) ---- */
+.tooltip-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 5px;
+  color: #5f6266;
+  letter-spacing: 0.2px;
+}
+
+.cursor-tooltip,
+.cursor-tooltip * {
+  cursor: pointer !important;
+}
+
 @keyframes scale-estreme {
   0% {
     transform: scale(0);
@@ -117,32 +143,5 @@ export default {
     transform: scale(1);
     opacity: 1;
   }
-}
-
-.bands-tooltip,
-.preorigin-tooltip,
-.rfplans-tooltip,
-.custom-tooltip,
-.leaflet-tooltip {
-  animation: scale-estreme 0.2s ease-out;
-  transform-origin: top left;
-}
-
-/* End Animation */
-
-/* Close button */
-.tooltip-close {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  background: transparent;
-  border: none;
-  font-size: 16px;
-  font-weight: bold;
-  color: #555;
-  cursor: pointer;
-}
-.tooltip-close:hover {
-  color: #000;
 }
 </style>
