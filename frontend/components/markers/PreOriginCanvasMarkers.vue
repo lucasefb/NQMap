@@ -1,15 +1,15 @@
 <template>
   <div>
-    <PreOriginTooltip ref="tooltipRef" />
+    <Tooltip ref="tooltipRef" extraClass="preorigin-tooltip" />
   </div>
 </template>
 
 <script>
-import PreOriginTooltip from './PreOriginTooltip.vue';
+import Tooltip from '~/components/Tooltip.vue';
 
 export default {
   name: 'PreOriginCanvasMarkers',
-  components: { PreOriginTooltip },
+  components: { Tooltip },
   props: {
     markers: { type: Array, default: () => [] },
     zoom: { type: Number, required: true },
@@ -32,6 +32,30 @@ export default {
     markers(m) { if (this.canvasLayer) this.canvasLayer.setOrigins(m); }
   },
   methods: {
+    showTooltip(origin, ev) {
+      const marker = origin;
+      const html = `
+        <div class="preorigin-tooltip-inner">
+          <div><b>Tipo:</b> ${marker.tipo || ''}</div>
+          <div><b>Sitio:</b> ${marker.sitio || ''}</div>
+          <div><b>Latitud:</b> ${marker.lat || ''}</div>
+          <div><b>Longitud:</b> ${marker.lng || ''}</div>
+          <div><b>Descripción:</b> ${marker.descripcion || ''}</div>
+          <div><b>Fecha:</b> ${(() => {
+            const f = marker.fecha ? marker.fecha.slice(0,10) : '';
+            if (!f) return '';
+            const [y,m,d] = f.split('-');
+            return `${d}/${m}/${y}`;
+          })()}</div>
+        </div>`;
+      this.$refs.tooltipRef?.show(html, ev);
+      this.$refs.tooltipRef?.pin();
+    },
+    hideTooltip() {
+      if (!this.$refs.tooltipRef?.pinned) {
+        this.$refs.tooltipRef?.hide();
+      }
+    },
     async initialize() {
       if (this.isInitialized || !process.client) return;
       if (!window.L || !this.mapInstance) { setTimeout(this.initialize, 100); return; }
@@ -40,8 +64,8 @@ export default {
         const Cls = createPreOriginCanvasLayer();
         if (!Cls) return;
         this.canvasLayer = new Cls();
-        this.canvasLayer.on('originover', e => this.$refs.tooltipRef?.showTooltip(e.origin));
-        this.canvasLayer.on('originout', () => this.$refs.tooltipRef?.hideTooltip());
+        this.canvasLayer.on('originover', e => this.showTooltip(e.origin, e.event));
+        this.canvasLayer.on('originout', () => this.hideTooltip());
         this.mapInstance.addLayer(this.canvasLayer);
         this.canvasLayer.setOrigins(this.markers);
         this.isInitialized = true;
