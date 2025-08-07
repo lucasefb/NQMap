@@ -102,6 +102,10 @@ export function createBandsCanvasLayer() {
       L.DomEvent.on(this._canvas, 'mouseout', this._onMouseOut, this);
       L.DomEvent.on(this._canvas, 'click', this._onClick, this);
       
+      // Iniciamos animación de latido
+      this._pulseTime = performance.now();
+      this._animationFrame = requestAnimationFrame(this._animate.bind(this));
+      
       this._reset();
     },
 
@@ -114,6 +118,13 @@ export function createBandsCanvasLayer() {
       });
     },
 
+    // Loop de animación de latido
+    _animate: function() {
+      this._pulseTime = performance.now();
+      this._reset();
+      this._animationFrame = requestAnimationFrame(this._animate.bind(this));
+    },
+
     onRemove: function(map) {
       L.DomUtil.remove(this._canvas);
       map.off('resize', this._reset, this);
@@ -123,6 +134,12 @@ export function createBandsCanvasLayer() {
       L.DomEvent.off(this._canvas, 'mousemove', this._onMouseMove, this);
       L.DomEvent.off(this._canvas, 'mouseout', this._onMouseOut, this);
       L.DomEvent.off(this._canvas, 'click', this._onClick, this);
+      
+      // Detenemos animación
+      if (this._animationFrame) {
+        cancelAnimationFrame(this._animationFrame);
+        this._animationFrame = null;
+      }
     },
 
     // Método para actualizar las bandas
@@ -217,7 +234,16 @@ export function createBandsCanvasLayer() {
       const baseSize = this._getSizeForBand(band);
       const zoom = this._map.getZoom();
       const scaleFactor = this._getScaleFactor(zoom);
-      const size = baseSize * scaleFactor * 0.7; // 0.7 es el scaleTotal del original
+      
+      // Factor de pulso tipo "latido". Creamos una onda que se desplaza desde el centro usando el tamaño como desfase.
+      const time = this._pulseTime || performance.now();
+      // Parámetros de la onda (más lentos y sutiles)
+      const waveSpeed = 3000; // ms que dura un ciclo completo (más lento)
+      const waveLength = 300; // la onda se desplaza más despacio entre tamaños
+      const phase = ((time / waveSpeed) - (baseSize / waveLength)) * 2 * Math.PI;
+      const pulseFactor = 1 + 0.025 * Math.sin(phase); // Oscila ±2% para un efecto más leve
+      
+      const size = baseSize * scaleFactor * 0.7 * pulseFactor; // 0.7 es el scaleTotal del original
       
       // NUEVO: Dibujamos solo una franja curva, no un cono completo
       // Configuramos el estilo de la línea

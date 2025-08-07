@@ -44,6 +44,14 @@ export function createRFPlansCanvasLayer() {
       map.on('mousemove', this._onMouseMove, this);
       map.on('mouseout', this._onMouseLeave, this);
 
+      // Iniciamos animación de pulso
+      this._pulseTime = performance.now();
+      const _animate = () => {
+        this._pulseTime = performance.now();
+        this._reset();
+        this._animationFrame = requestAnimationFrame(_animate);
+      };
+      this._animationFrame = requestAnimationFrame(_animate);
       this._reset();
     },
 
@@ -53,6 +61,11 @@ export function createRFPlansCanvasLayer() {
       map.off('resize move zoom', this._reset, this);
       map.off('mousemove', this._onMouseMove, this);
       map.off('mouseout', this._onMouseLeave, this);
+      // Detenemos animación
+      if (this._animationFrame) {
+        cancelAnimationFrame(this._animationFrame);
+        this._animationFrame = null;
+      }
     },
 
     _reset: function () {
@@ -78,7 +91,12 @@ export function createRFPlansCanvasLayer() {
         if (typeof plan.lat !== 'number' || typeof plan.lng !== 'number') continue;
         const point = this._map.latLngToContainerPoint([plan.lat, plan.lng]);
 
-        const radius = this._scaleRadius(zoom);
+        let radius = this._scaleRadius(zoom);
+        const time = this._pulseTime || performance.now();
+        const waveSpeed = 3000;
+        const phase = ((time / waveSpeed) - (radius / 200)) * 2 * Math.PI;
+        const pulseFactor = 1 + 0.025 * Math.sin(phase);
+        radius = radius * pulseFactor;
         ctx.beginPath();
         ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
         ctx.closePath();
