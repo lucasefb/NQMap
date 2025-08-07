@@ -30,12 +30,12 @@
       <LoadingSpinner :isLoading="isLoading" />
     </div>
 
-    <FilterBox :filterByCoverageLTE="filterByCoverageLTE" :filterForSolution="filterForSolution"
+    <FilterBox :filterByCoverageLTE="filterByCoverageLTE" :filterByCoverage5G="filterByCoverage5G" :filterForSolution="filterForSolution"
       :filterForTechnology="filterForTechnology" :filterForRFPlans="filterForRFPlans"
       :filterForPreOrigin="filterForPreOrigin" :mapType="mapType" :corpoVipFilter="corpoVipFilter" :urls="urls"
       :loadCellsWithBigPRB="loadCellsWithBigPRB" @toggleBigPRB="loadCellsWithBigPRB = $event"
       @updateFilterForSolution="updateFilterForSolution" @updateFilterForTechnology="updateFilterForTechnology"
-      @updatefilterByCoverageLTE="updatefilterByCoverageLTE" @updateMapType="updateMapType"
+      @updatefilterByCoverageLTE="updatefilterByCoverageLTE" @updatefilterByCoverage5G="updatefilterByCoverage5G" @updateMapType="updateMapType"
       @input="corpoVipFilter = $event" />
   </div>
 </template>
@@ -128,7 +128,12 @@ export default {
     },
     updatefilterByCoverageLTE(newfilterByCoverageLTE) {
       this.filterByCoverageLTE = newfilterByCoverageLTE;
-      this.updateCoverageLayer(); // <- Asegura actualización de la capa aunque el zoom no cambie
+      this.updateCoverageLayer();
+      this.debouncedFetchReclamos();
+    },
+    updatefilterByCoverage5G(newfilterByCoverage5G) {
+      this.filterByCoverage5G = newfilterByCoverage5G;
+      this.updateCoverageLayer(); // actualiza capa canvas
       this.debouncedFetchReclamos();
     }
   },

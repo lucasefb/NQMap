@@ -122,12 +122,26 @@ def process_kmz_folder(folder_path, extract_to_path):
     # with open(consolidated_file, "w", encoding="utf-8") as f:
     #     geojson.dump(geojson_data, f, indent=2, ensure_ascii=False)
 
-    # Guardar los datos de overlay para el frontend
+    # Guardar los datos de overlay para el frontend, fusionando con los existentes si ya hay archivo
     overlays_file = os.path.join(extract_to_path, "coverage_overlays.json")
-    with open(overlays_file, "w", encoding="utf-8") as f:
-        json.dump(all_overlays, f, indent=2, ensure_ascii=False)
 
-    print(f"Overlays para frontend guardados como {overlays_file} ({len(all_overlays)} overlays)")
+    if os.path.exists(overlays_file):
+        try:
+            with open(overlays_file, "r", encoding="utf-8") as f:
+                existing_overlays = json.load(f)
+        except Exception as e:
+            print(f"[ADVERTENCIA] No se pudo leer el archivo existente de overlays ({e}), se sobrescribirá.")
+            existing_overlays = []
+    else:
+        existing_overlays = []
+
+    # Combinar evitando duplicados exactos
+    combined_overlays = existing_overlays + [ov for ov in all_overlays if ov not in existing_overlays]
+
+    with open(overlays_file, "w", encoding="utf-8") as f:
+        json.dump(combined_overlays, f, indent=2, ensure_ascii=False)
+
+    print(f"Overlays para frontend guardados como {overlays_file} ({len(combined_overlays)} overlays)")
 
 def process_kmz_points(kmz_path):
 
@@ -218,20 +232,29 @@ def process_kmz_groundoverlays(kmz_path, base_name, extract_to_path):
 def ejecutar_proceso():
     app_env = os.getenv('APP_ENV', 'prod').lower()
     base_dir_key = f"BASE_DIR_{app_env.upper()}"
-    folder_path = os.getenv(base_dir_key)
-    if not folder_path:
+    folder_paths_env = os.getenv(base_dir_key)
+    if not folder_paths_env:
         raise ValueError(f"No se encontró la variable {base_dir_key} en .env")
+
+    # Permitir múltiples rutas separadas por el separador de PATH del sistema (p. ej. ';' en Windows, ':' en Unix)
+    folder_paths = [p.strip() for p in folder_paths_env.split(os.pathsep) if p.strip()]
+    if not folder_paths:
+        raise ValueError(f"La variable {base_dir_key} no contiene rutas válidas")
 
     # Directorio de extracción dentro del backend
     extract_to_path = os.path.join(os.path.dirname(__file__), 'extracted')
     os.makedirs(extract_to_path, exist_ok=True)
 
     print(f"Ejecutando proceso de actualización de KMZ... ({time.strftime('%Y-%m-%d %H:%M:%S')})")
-    print(f"APP_ENV={app_env} | folder_path={folder_path} | extract_to_path={extract_to_path}")
-    process_kmz_folder(folder_path, extract_to_path)
+    print(f"APP_ENV={app_env} | folder_paths={folder_paths} | extract_to_path={extract_to_path}")
+
+    for folder_path in folder_paths:
+        if not os.path.isdir(folder_path):
+            print(f"[ADVERTENCIA] La ruta {folder_path} no es un directorio válido, se omite.")
+            continue
+        process_kmz_folder(folder_path, extract_to_path)
+
     print("Proceso completado.")
-
-
 
 # Programar ejecución solo los domingos a las 06:00 AM
 # schedule.every().sunday.at("06:00").do(ejecutar_proceso)
