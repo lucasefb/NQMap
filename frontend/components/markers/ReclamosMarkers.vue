@@ -50,7 +50,7 @@
 
 // Marker SVG para reclamos (VIP/CORPO)
 function getReclamoSvgIcon ({ tipo = 'VIP', radius = 12 } = {}) {
-  const color = tipo === 'VIP' ? '#007bff' : '#ff0000'
+  const color = tipo === 'VIP' ? '#ff0000' : '#007bff'
   const size = radius * 2
   const svg = `
     <svg width="${size}" height="${size}" viewBox="-2 0 19 19" xmlns="http://www.w3.org/2000/svg" fill="${color}">
