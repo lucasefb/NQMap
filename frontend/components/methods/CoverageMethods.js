@@ -82,6 +82,14 @@ function createCoverageCanvasLayer() {
       for (const ov of this._overlays) {
         // Match overlay key with any active type (RSRP, RSRQ, TH_DL)
     const normKey = this._normalizeKey(ov.key);
+
+    // Verify technology match first
+    const isLTE = normKey.includes('LTE');
+    const isNR = normKey.includes('5G');
+    if ((isLTE && !this.options.activeTechs?.has('LTE')) || (isNR && !this.options.activeTechs?.has('5G'))) {
+      continue;
+    }
+
     const isActive = [...this._activeKeys].some(active => normKey.includes(active));
     if (!isActive) continue;
         const img = this._imagesCache.get(ov.imageUrl);
@@ -122,9 +130,12 @@ async loadCoverageOverlays() {
       swLat: b.getSouthWest().lat,
       swLng: b.getSouthWest().lng,
     };
-    const res = await this.$axios.get(`${API_BASE_URL}/api/coverage4g-python`, { params });
+    const [res4g, res5g] = await Promise.all([
+      this.$axios.get(`${API_BASE_URL}/api/coverage4g-python`, { params }),
+      this.$axios.get(`${API_BASE_URL}/api/coverage5g-python`, { params }).catch(() => ({ data: [] }))
+    ]);
       
-      this.coverageOverlays = res.data;
+      this.coverageOverlays = [...res4g.data, ...res5g.data];
     // Si la capa ya existe, actualizarla al vuelo
     if (this.coverageLayer) {
       this.coverageLayer.setOverlays(this.coverageOverlays);
@@ -156,15 +167,32 @@ async loadCoverageOverlays() {
   },
 
   _setActiveKeys() {
-    const before = this._activeKeysCount || 0;
     if (!this.coverageLayer) return;
-    const activeKeys = Object.entries(this.filterByCoverageLTE || {})
-      .filter(([k, v]) => v)
-      .map(([k]) => k);
-    
+
+    // Determine which techs are active
+    const techActive = new Set();
+    const activeKeys = [];
+
+    const lteEntries = Object.entries(this.filterByCoverageLTE || {});
+    const nrEntries = Object.entries(this.filterByCoverage5G || {});
+
+    lteEntries.forEach(([k, v]) => {
+      if (v) {
+        techActive.add('LTE');
+        activeKeys.push(k); // RSRP, RSRQ, TH_DL, INDOOR
+      }
+    });
+
+    nrEntries.forEach(([k, v]) => {
+      if (v) {
+        techActive.add('5G');
+        activeKeys.push(k);
+      }
+    });
+
+    // guardar techs activas en la instancia de layer para que _redraw pueda acceder
+    this.coverageLayer.options.activeTechs = techActive;
     this.coverageLayer.setActiveKeys(activeKeys);
-    this._activeKeysCount = activeKeys.length;
-    
   },
 
   updateCoverageLayer() {

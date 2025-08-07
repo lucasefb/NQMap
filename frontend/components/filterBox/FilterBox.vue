@@ -79,30 +79,73 @@
       </FilterGroup>
 
       
-      <FilterGroup title="Cobertura 4G" @toggleGroup="toggle('Arieso')" :selectable="false">
-        <!-- Intensidad (RSRP) -->
-        <FilterItem
-          :checked="filterByCoverageLTE.RSRP"
-          @update="updateFilter(filterByCoverageLTE, 'RSRP', $event)"
-        >
-          Intensidad (RSRP)
-        </FilterItem>
+      <FilterGroup title="Cobertura" @toggleGroup="toggle('Coverage')" :selectable="false">
+        <!-- Plots 4G -->
+        <FilterGroup title="Plots 4G" @toggleGroup="toggle('Coverage4G')" :selectable="false">
+          <!-- Intensidad (RSRP) -->
+          <FilterItem
+            :checked="filterByCoverageLTE.RSRP"
+            @update="updateFilter(filterByCoverageLTE, 'RSRP', $event)"
+          >
+            Intensidad (RSRP)
+          </FilterItem>
 
-        <!-- Calidad (RSRQ) -->
-        <FilterItem
-          :checked="filterByCoverageLTE.RSRQ"
-          @update="updateFilter(filterByCoverageLTE, 'RSRQ', $event)"
-        >
-          Calidad (RSRQ)
-        </FilterItem>
+          <!-- Calidad (RSRQ) -->
+          <FilterItem
+            :checked="filterByCoverageLTE.RSRQ"
+            @update="updateFilter(filterByCoverageLTE, 'RSRQ', $event)"
+          >
+            Calidad (RSRQ)
+          </FilterItem>
 
-        <!-- Throughput (TRP) -->
-        <FilterItem
-          :checked="filterByCoverageLTE.TH_DL"
-          @update="updateFilter(filterByCoverageLTE, 'TH_DL', $event)"
-        >
-          Throughput (TRP)
-        </FilterItem>
+          <!-- Throughput (TRP) -->
+          <FilterItem
+            :checked="filterByCoverageLTE.TH_DL"
+            @update="updateFilter(filterByCoverageLTE, 'TH_DL', $event)"
+          >
+            Throughput (TRP)
+          </FilterItem>
+
+          <!-- Indoor -->
+          <FilterItem
+            :checked="filterByCoverageLTE.INDOOR"
+            @update="updateFilter(filterByCoverageLTE, 'INDOOR', $event)"
+          >
+            Indoor
+          </FilterItem>
+        </FilterGroup>
+
+        <!-- Plots 5G -->
+        <FilterGroup title="Plots 5G" @toggleGroup="toggle('Coverage5G')" :selectable="false">
+
+          <FilterItem
+            :checked="filterByCoverage5G.RSRP"
+            @update="updateFilter(filterByCoverage5G, 'RSRP', $event)"
+          >
+            Intensidad (RSRP)
+          </FilterItem>
+
+          <FilterItem
+            :checked="filterByCoverage5G.RSRQ"
+            @update="updateFilter(filterByCoverage5G, 'RSRQ', $event)"
+          >
+            Calidad (RSRQ)
+          </FilterItem>
+
+          <!-- <FilterItem
+            :checked="filterByCoverage5G.TH_DL"
+            @update="updateFilter(filterByCoverage5G, 'TH_DL', $event)"
+          >
+            Throughput (TRP)
+          </FilterItem>
+
+          <FilterItem
+            :checked="filterByCoverage5G.INDOOR"
+            @update="updateFilter(filterByCoverage5G, 'INDOOR', $event)"
+          >
+            Indoor
+          </FilterItem> -->
+        </FilterGroup>
       </FilterGroup>
     </div>
 
@@ -131,6 +174,11 @@ export default {
     filterForSolution: Object,
     filterForTechnology: Object,
     filterByCoverageLTE: Object,
+    filterByCoverage5G: {
+      type: Object,
+      required: false,
+      default: () => ({ RSRP: false, RSRQ: false, TH_DL: false, INDOOR: false })
+    },
     loadCellsWithBigPRB: Boolean,
     mapType: String,
     corpoVipFilter: {
@@ -229,15 +277,27 @@ export default {
     updateFilter(group, key, value) {
       this.$set(group, key, value);
       if (group === this.filterByCoverageLTE) {
-        // Hacer que RSRP / RSRQ / TH_DL sean mutuamente excluyentes
         if (value) {
-          Object.keys(group).forEach(k => {
-            this.$set(group, k, k === key);
-          });
+          // Apagar todo en ambos grupos, luego encender sólo la key en LTE
+          Object.keys(this.filterByCoverageLTE).forEach(k => this.$set(this.filterByCoverageLTE, k, k === key));
+          Object.keys(this.filterByCoverage5G).forEach(k => this.$set(this.filterByCoverage5G, k, false));
+        } else {
+          this.$set(this.filterByCoverageLTE, key, false);
+        }
+        this.$emit('updatefilterByCoverageLTE', { ...this.filterByCoverageLTE });
+        this.$emit('updatefilterByCoverage5G', { ...this.filterByCoverage5G });
+        return;
+      }
+      if (group === this.filterByCoverage5G) {
+        if (value) {
+          // Apagar todo en ambos grupos, luego encender sólo la key en 5G
+          Object.keys(this.filterByCoverage5G).forEach(k => this.$set(this.filterByCoverage5G, k, k === key));
+          Object.keys(this.filterByCoverageLTE).forEach(k => this.$set(this.filterByCoverageLTE, k, false));
         } else {
           this.$set(group, key, false);
         }
-        this.$emit('updatefilterByCoverageLTE', { ...group });
+        this.$emit('updatefilterByCoverage5G', { ...this.filterByCoverage5G });
+        this.$emit('updatefilterByCoverageLTE', { ...this.filterByCoverageLTE });
         return;
       }
     },
