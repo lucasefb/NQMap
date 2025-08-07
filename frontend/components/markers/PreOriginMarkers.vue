@@ -18,17 +18,17 @@
           <small>{{ (marker.fecha || '').slice(0,10) || 'Sin fecha' }}</small>
         </div>
       </l-tooltip>
-      <PreOriginTooltip ref="LTooltipRef" />
+      <Tooltip ref="LTooltipRef" extraClass="preorigin-tooltip" />
     </l-marker>
   </div>
 </template>
 
 <script>
-import PreOriginTooltip from './PreOriginTooltip.vue';
+import Tooltip from '~/components/Tooltip.vue';
 
 export default {
   components: {
-    PreOriginTooltip
+    Tooltip
   },
   props: {
     markers: Array,
@@ -71,11 +71,28 @@ export default {
 
       return createIcon();
     },
-    showTooltip(marker) {
-      this.$refs.LTooltipRef?.showTooltip(marker);
+    showTooltip(marker, ev) {
+      const html = `
+        <div class="preorigin-tooltip-inner">
+          <div><b>Tipo:</b> ${marker.tipo || ''}</div>
+          <div><b>Sitio:</b> ${marker.sitio || ''}</div>
+          <div><b>Latitud:</b> ${marker.lat || ''}</div>
+          <div><b>Longitud:</b> ${marker.lng || ''}</div>
+          <div><b>Descripción:</b> ${marker.descripcion || ''}</div>
+          <div><b>Fecha:</b> ${(() => {
+            const f = marker.fecha ? marker.fecha.slice(0,10) : '';
+            if (!f) return '';
+            const [y, m, d] = f.split('-');
+            return `${d}/${m}/${y}`;
+          })()}</div>
+        </div>`;
+      this.$refs.LTooltipRef?.show(html, ev);
+      this.$refs.LTooltipRef?.pin();
     },
     hideTooltip() {
-      this.$refs.LTooltipRef?.hideTooltip();
+      if (!this.$refs.LTooltipRef?.pinned) {
+        this.$refs.LTooltipRef?.hide();
+      }
     }
   }
 };
