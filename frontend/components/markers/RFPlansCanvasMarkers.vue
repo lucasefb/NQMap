@@ -37,7 +37,8 @@ export default {
   },
   computed: {
     shouldRender() {
-      return this.zoom >= 12 && this.markers.length > 0;
+      // Mostrar siempre que haya marcadores (clusters o individuales)
+      return this.markers.length > 0;
     },
   },
   watch: {
@@ -56,7 +57,9 @@ export default {
       }
     },
     markers(newMarkers) {
+      console.log('[RFPlansCanvasMarkers] Received markers:', newMarkers ? newMarkers.length : 0, newMarkers);
       if (this.canvasLayer && newMarkers) {
+        console.log('[RFPlansCanvasMarkers] Setting markers to canvas layer');
         this.canvasLayer.setRFPlans(newMarkers);
       }
       // Si se limpiaron los marcadores, cerrar popup y ocultar tooltip
@@ -67,14 +70,10 @@ export default {
         this.activePopupKey = null;
       }
     },
-    // Ocultar tooltip y cerrar popups al alejar por debajo de 12
+    // Los clusters se muestran en todos los zooms, solo cerrar popups si es necesario
     zoom(newZoom) {
-      if (newZoom < 12) {
-        this.hideTooltip();
-        if (this.currentPopup) { try { this.currentPopup.remove(); } catch (_) {} this.currentPopup = null; }
-        if (this.mapInstance) { try { this.mapInstance.closePopup(); } catch (_) {} }
-        this.activePopupKey = null;
-      }
+      // Solo cerrar popups para planes individuales en zooms muy bajos si es necesario
+      // Los clusters deben ser visibles en todos los zooms
     }
   },
   methods: {
@@ -82,17 +81,39 @@ export default {
       return [marker.nombre, marker.lat, marker.lng, marker.fecha].join('|');
     },
     buildPlanHtml(marker) {
-      return `
-        <div class="rfplans-tooltip-inner">
-          <div><b>Tipo:</b> ${marker.nombre || ''}</div>
-          <div><b>Latitud:</b> ${marker.lat || ''}</div>
-          <div><b>Longitud:</b> ${marker.lng || ''}</div>
-          <div><b>Estado del Plan:</b> ${marker.fecha || ''}</div>
-        </div>`;
+      if (marker.isCluster) {
+        if (marker.count === 1) {
+          // Para clusters de 1 elemento, mostrar información del elemento
+          const item = marker.childPlans && marker.childPlans[0];
+          return `
+            <div class="rfplans-tooltip-inner">
+              <div><b>Tipo:</b> ${marker.tipo || 'RF Plan'}</div>
+              <div><b>Nombre:</b> ${item?.nombre || ''}</div>
+              <div><b>Latitud:</b> ${marker.lat || ''}</div>
+              <div><b>Longitud:</b> ${marker.lng || ''}</div>
+              <div><b>Fecha:</b> ${item?.fecha || ''}</div>
+              <div><small>Haz click para hacer zoom</small></div>
+            </div>`;
+        } else {
+          return `
+            <div class="rfplans-tooltip-inner">
+              <div><b>Cluster de RF Plans</b></div>
+              <div><b>Cantidad:</b> ${marker.count || 1} planes</div>
+              <div><b>Tipo:</b> ${marker.tipo || 'RF Plans'}</div>
+              <div><small>Haz click para hacer zoom</small></div>
+            </div>`;
+        }
+      } else {
+        return `
+          <div class="rfplans-tooltip-inner">
+            <div><b>Tipo:</b> ${marker.nombre || ''}</div>
+            <div><b>Latitud:</b> ${marker.lat || ''}</div>
+            <div><b>Longitud:</b> ${marker.lng || ''}</div>
+            <div><b>Estado del Plan:</b> ${marker.fecha || ''}</div>
+          </div>`;
+      }
     },
     showTooltip(marker, ev) {
-      // No mostrar si el zoom está por debajo del umbral
-      if (this.zoom < 12) { this.$refs.tooltipRef?.hide(); return; }
       const key = this.buildPlanKey(marker);
       if (this.activePopupKey && this.activePopupKey === key) return;
       const html = this.buildPlanHtml(marker);
@@ -100,6 +121,15 @@ export default {
     },
     openPopupForPlan(marker) {
       if (!this.mapInstance) return;
+      
+      // Si es un cluster, hacer zoom para expandir
+      if (marker.isCluster) {
+        const newZoom = Math.min(this.zoom + 2, 18);
+        this.mapInstance.setView([marker.lat, marker.lng], newZoom);
+        return;
+      }
+      
+      // Si es un plan individual, mostrar popup
       const html = this.buildPlanHtml(marker);
       this.activePopupKey = this.buildPlanKey(marker);
       const popup = this.$refs.tooltipRef?.openPopupAt([marker.lat, marker.lng], this.mapInstance, html);
@@ -143,15 +173,10 @@ export default {
         this.mapInstance.addLayer(this.canvasLayer);
         this.canvasLayer.setRFPlans(this.markers);
         this.isInitialized = true;
-        // Listener: al cambiar zoom cerrar tooltip/popup si z < 12
+        // Listener: manejar cambios de zoom (clusters visibles en todos los zooms)
         this._onZoomEnd = () => {
-          const z = (this.mapInstance && this.mapInstance.getZoom) ? this.mapInstance.getZoom() : this.zoom;
-          if (z < 12) {
-            this.hideTooltip();
-            if (this.currentPopup) { try { this.currentPopup.remove(); } catch (_) {} this.currentPopup = null; }
-            if (this.mapInstance) { try { this.mapInstance.closePopup(); } catch (_) {} }
-            this.activePopupKey = null;
-          }
+          // Los clusters son visibles en todos los zooms, no necesitamos cerrar nada
+          // Solo actualizar si es necesario
         };
         if (this.mapInstance && this.mapInstance.on) {
           this.mapInstance.on('zoomend', this._onZoomEnd);

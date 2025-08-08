@@ -29,8 +29,18 @@ export default {
       if (!newCenter.equals(this._lastCenter)) {
         await this.fetchMarkers();
         await this.fetchBandsMarkers();
-        await this.fetchPreOriginMarkers();
-        await this.fetchRFPlansMarkers();
+        // Solo llamar fetchPreOriginMarkers si hay filtros activos
+        const hasActivePreOriginFilters = Object.values(this.filterForPreOrigin || {}).some(v => v === true);
+        if (hasActivePreOriginFilters) {
+          const markers = await this.fetchPreOriginMarkers(this.filterForPreOrigin);
+          this.preOriginMarkers = markers;
+        }
+        // Solo llamar fetchRFPlansMarkers si hay filtros activos
+        const hasActiveRFPlanFilters = Object.values(this.filterForRFPlans || {}).some(v => v === true);
+        if (hasActiveRFPlanFilters) {
+          const markers = await this.fetchRFPlansMarkers(this.filterForRFPlans);
+          this.rfPlansMarkers = markers;
+        }
         await this.loadCoverageOverlays();
       }
     });

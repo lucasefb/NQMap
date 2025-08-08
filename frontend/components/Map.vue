@@ -147,8 +147,14 @@ export default {
       deep: true
     },
     filterForPreOrigin: {
-      handler() {
-        this.debouncedFetchPreOriginMarkers();
+      async handler(newVal) {
+        const allFalse = Object.values(newVal).every(v => v === false);
+        if (allFalse) {
+          this.preOriginMarkers = [];
+          return;
+        }
+        const markers = await this.fetchPreOriginMarkers(newVal);
+        this.preOriginMarkers = markers;
       },
       deep: true
     },
@@ -173,6 +179,30 @@ export default {
     zoom(newZoom) {
       this.updateCoverageLayer();
       this.debouncedFetchReclamos();
+      
+      // Recalcular RF Plans clustering cuando cambie el zoom
+      if (this.rfPlansMarkers && this.rfPlansMarkers.length > 0) {
+        const activeTypes = Object.entries(this.filterForRFPlans)
+          .filter(([_, value]) => value)
+          .map(([key]) => key);
+        if (activeTypes.length > 0) {
+          this.fetchRFPlansMarkers(this.filterForRFPlans).then(markers => {
+            this.rfPlansMarkers = markers;
+          });
+        }
+      }
+      
+      // Recalcular Pre-Origin clustering cuando cambie el zoom
+      if (this.preOriginMarkers && this.preOriginMarkers.length > 0) {
+        const activePreOriginTypes = Object.entries(this.filterForPreOrigin)
+          .filter(([_, value]) => value)
+          .map(([key]) => key);
+        if (activePreOriginTypes.length > 0) {
+          this.fetchPreOriginMarkers(this.filterForPreOrigin).then(markers => {
+            this.preOriginMarkers = markers;
+          });
+        }
+      }
     },
     corpoVipFilter: {
       handler() {

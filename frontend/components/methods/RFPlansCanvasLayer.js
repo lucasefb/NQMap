@@ -74,29 +74,92 @@ export function createRFPlansCanvasLayer() {
       ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
 
       const zoom = this._map.getZoom();
-      if (zoom < 12) return; // same threshold as DOM version
-
+      
       for (const plan of this._plans) {
         if (typeof plan.lat !== 'number' || typeof plan.lng !== 'number') continue;
         const point = this._map.latLngToContainerPoint([plan.lat, plan.lng]);
 
-        const radius = this._scaleRadius(zoom);
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-        ctx.closePath();
-
-        // Gradient fill similar visual
-        const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius);
-        gradient.addColorStop(0, this.options.fillColor);
-        gradient.addColorStop(1, 'rgba(0,128,255,0)');
-        ctx.fillStyle = gradient;
-        ctx.fill();
-
-        ctx.lineWidth = radius * 0.1;
-        ctx.strokeStyle = this.options.borderColor;
-        ctx.globalAlpha = this.options.opacity;
-        ctx.stroke();
+        if (plan.isCluster) {
+          this._drawCluster(ctx, point, plan, zoom);
+        } else {
+          this._drawIndividualPlan(ctx, point, plan, zoom);
+        }
       }
+    },
+
+    _drawCluster: function(ctx, point, cluster, zoom) {
+      const count = cluster.count || 1;
+      let size = 45;
+      if (count >= 100) {
+        size = 65;
+      } else if (count >= 50) {
+        size = 55;
+      } else if (count === 1) {
+        size = 35;
+      }
+
+      const colorMap = {
+        // RF Plans específicos
+        'Expansiones 4G': '#FF9800', // Naranja para 4G/LTE
+        'Expansiones 5G': '#9C27B0', // Morado para 5G
+        // Pre-Origin (para futura implementación)
+        'Nuevo_Sitio': '#2196F3',
+        'Nuevo_Anillo': '#4CAF50', 
+        'Expansion_LTE': '#FF9800',
+        'Expansion_NR': '#9C27B0',
+        'Nuevo_Sector': '#F44336',
+        'Expansion_Multiplexacion': '#00BCD4',
+        'Punto_de_Interes_Indoor': '#FFC107',
+        // Fallbacks
+        'RF_PLAN': '#E91E63',
+        'DEFAULT': '#9E9E9E',
+      };
+
+      const bgColor = colorMap[cluster.tipo] || colorMap['DEFAULT'];
+      const ringColor = bgColor + '4D'; // Transparencia
+
+      // Dibujar anillo exterior
+      const outerRadius = size * 0.77 / 2;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, outerRadius, 0, Math.PI * 2);
+      ctx.fillStyle = ringColor;
+      ctx.fill();
+
+      // Dibujar círculo interior
+      const innerRadius = size * 0.65 / 2;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, innerRadius, 0, Math.PI * 2);
+      ctx.fillStyle = bgColor;
+      ctx.fill();
+
+      // Dibujar texto del contador
+      ctx.fillStyle = 'white';
+      ctx.font = `bold ${Math.floor(size / 4)}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(count.toString(), point.x, point.y);
+    },
+
+    _drawIndividualPlan: function(ctx, point, plan, zoom) {
+      if (zoom < 12) return; // threshold para planes individuales
+      
+      const radius = this._scaleRadius(zoom);
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+      ctx.closePath();
+
+      // Gradient fill similar visual
+      const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius);
+      gradient.addColorStop(0, this.options.fillColor);
+      gradient.addColorStop(1, 'rgba(0,128,255,0)');
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      ctx.lineWidth = radius * 0.1;
+      ctx.strokeStyle = this.options.borderColor;
+      ctx.globalAlpha = this.options.opacity;
+      ctx.stroke();
+      ctx.globalAlpha = 1; // Reset alpha
     },
 
     _scaleRadius(zoom) {
@@ -112,14 +175,28 @@ export function createRFPlansCanvasLayer() {
       const x = e.containerPoint.x;
       const y = e.containerPoint.y;
       const zoom = this._map.getZoom();
-      const radius = this._scaleRadius(zoom);
-      const hitRadiusSq = radius * radius;
 
       let found = null;
       for (const plan of this._plans) {
         const p = this._map.latLngToContainerPoint([plan.lat, plan.lng]);
         const dx = p.x - x;
         const dy = p.y - y;
+        
+        let hitRadius;
+        if (plan.isCluster) {
+          // Para clusters, usar el tamaño del cluster
+          const count = plan.count || 1;
+          let size = 45;
+          if (count >= 100) size = 65;
+          else if (count >= 50) size = 55;
+          else if (count === 1) size = 35;
+          hitRadius = size * 0.77 / 2;
+        } else {
+          // Para planes individuales, usar el radio escalado
+          hitRadius = this._scaleRadius(zoom);
+        }
+        
+        const hitRadiusSq = hitRadius * hitRadius;
         if (dx * dx + dy * dy <= hitRadiusSq) {
           found = plan;
           break;
@@ -150,13 +227,29 @@ export function createRFPlansCanvasLayer() {
       if (!e.containerPoint) return;
       const x = e.containerPoint.x;
       const y = e.containerPoint.y;
-      const radius = this._scaleRadius(this._map.getZoom());
-      const hitRadiusSq = radius * radius;
+      const zoom = this._map.getZoom();
+      
       let found = null;
       for (const plan of this._plans) {
         const p = this._map.latLngToContainerPoint([plan.lat, plan.lng]);
         const dx = p.x - x;
         const dy = p.y - y;
+        
+        let hitRadius;
+        if (plan.isCluster) {
+          // Para clusters, usar el tamaño del cluster
+          const count = plan.count || 1;
+          let size = 45;
+          if (count >= 100) size = 65;
+          else if (count >= 50) size = 55;
+          else if (count === 1) size = 35;
+          hitRadius = size * 0.77 / 2;
+        } else {
+          // Para planes individuales, usar el radio escalado
+          hitRadius = this._scaleRadius(zoom);
+        }
+        
+        const hitRadiusSq = hitRadius * hitRadius;
         if (dx * dx + dy * dy <= hitRadiusSq) {
           found = plan;
           break;
