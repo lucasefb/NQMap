@@ -311,9 +311,15 @@ export function createBandsCanvasLayer() {
         if (hoveredBand) {
           this._canvas.style.cursor = 'pointer';
           this.fire('bandover', { band: hoveredBand, originalEvent: e });
+          if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+            try { console.debug('[BandsCanvasLayer] bandover', hoveredBand.nombre || hoveredBand); } catch (_) {}
+          }
         } else {
           this._canvas.style.cursor = '';
           this.fire('bandout');
+          if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+            try { console.debug('[BandsCanvasLayer] bandout'); } catch (_) {}
+          }
         }
       }
     },
@@ -328,11 +334,22 @@ export function createBandsCanvasLayer() {
     },
 
     _onClick: function(e) {
-      const point = L.DomEvent.getMousePosition(e, this._canvas);
+      // Usar el mismo sistema de coordenadas que en _onMouseMove (containerPoint)
+      const point = this._map.mouseEventToContainerPoint(e);
       const clickedBand = this._findBandAtPoint(point);
       
       if (clickedBand) {
+        // Evitar que el click burbujee al mapa y cierre el popup inmediatamente
+        if (window.L && window.L.DomEvent && window.L.DomEvent.stop) {
+          window.L.DomEvent.stop(e);
+        } else if (e && e.stopPropagation) {
+          e.stopPropagation();
+          if (e.preventDefault) e.preventDefault();
+        }
         this.fire('bandclick', { band: clickedBand, originalEvent: e });
+        if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+          try { console.debug('[BandsCanvasLayer] bandclick', clickedBand.nombre || clickedBand); } catch (_) {}
+        }
       }
     },
 

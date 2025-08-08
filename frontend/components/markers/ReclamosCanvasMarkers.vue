@@ -104,7 +104,7 @@ export default {
           <b>${m.tipo || m.TIPO_RECLAMO}</b><br>
           <span>ESTADO:</span> ${m.ESTADO || m.estado}<br>
           <span>LAT/LON:</span> ${m.lat || m.LATITUD}, ${m.lng || m.LONGITUD}<br>
-          <span>NOMBRE_REF:</span> ${m.NOMBRE_REFERENCIAL || m.nombre_ref}<br>
+          <span>NOMBRE_REF:</span> ${m.NOMBRE_REFERENCIAL.replace(/_/g, ' ') || m.nombre_ref.replace(/_/g, ' ')}<br>
           <button data-reclamo-id="${m.ID || m.id}" style="margin-top:6px;">Ver acciones</button>
           ${showHr ? '<hr>' : ''}
         </div>`;

@@ -25,9 +25,9 @@
               <div class="tooltip-content">
                 <div v-for="m in group.markers" :key="m.ID || m.id" class="reclamo-copy">
                   <b>{{ m.tipo || m.TIPO_RECLAMO }}</b><br>
-                  <span>ESTADO:</span> {{ m.ESTADO || m.estado }}<br>
-                  <span>LAT/LON:</span> {{ m.lat || m.LATITUD }}, {{ m.lng || m.LONGITUD }}<br>
-                  <span>NOMBRE_REF:</span> {{ m.NOMBRE_REFERENCIAL || m.nombre_ref }}<br>
+                  <span>Estado:</span> {{ m.ESTADO || m.estado }}<br>
+                  <span>Lat/Lon:</span> {{ m.lat || m.LATITUD }}, {{ m.lng || m.LONGITUD }}<br>
+                  <span>Nombre Ref:</span> {{ m.NOMBRE_REFERENCIAL || m.nombre_ref }}<br>
                   <template v-if="m.acciones && m.acciones.length">
                     <div style="margin-top:2px;">
                       <span>Acciones:</span>
