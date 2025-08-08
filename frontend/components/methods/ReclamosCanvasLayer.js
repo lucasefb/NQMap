@@ -50,7 +50,7 @@ export function createReclamosCanvasLayer() {
     },
 
     _drawIcon(ctx, p, tipo) {
-      const color = (tipo || '').toUpperCase() === 'VIP' ? '#007bff' : '#ff0000';
+      const color = (tipo || '').toUpperCase() === 'VIP' ? '#ff0000' : '#007bff';
       const r = 10;
       
       ctx.save();
