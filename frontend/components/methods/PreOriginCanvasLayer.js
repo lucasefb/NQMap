@@ -35,6 +35,7 @@ export function createPreOriginCanvasLayer() {
       // Escuchar eventos de mouse en el mapa para que múltiples capas convivan
       map.on('mousemove', this._onMouseMove, this);
       map.on('mouseout', this._onMouseLeave, this);
+      map.on('click', this._onClick, this);
 
       this._reset();
     },
@@ -45,6 +46,7 @@ export function createPreOriginCanvasLayer() {
       map.off('resize move zoom', this._reset, this);
       map.off('mousemove', this._onMouseMove, this);
       map.off('mouseout', this._onMouseLeave, this);
+      map.off('click', this._onClick, this);
     },
 
     _reset: function () {
@@ -115,7 +117,7 @@ export function createPreOriginCanvasLayer() {
       if (found) {
         if (this._hovered !== found) {
           this._hovered = found;
-          this.fire('originover', { origin: found });
+          this.fire('originover', { origin: found, event: e });
         }
       } else if (this._hovered) {
         this.fire('originout', { origin: this._hovered });
@@ -127,6 +129,27 @@ export function createPreOriginCanvasLayer() {
       if (this._hovered) {
         this.fire('originout', { origin: this._hovered });
         this._hovered = null;
+      }
+    },
+
+    _onClick: function (e) {
+      if (!e.containerPoint) return;
+      const x = e.containerPoint.x;
+      const y = e.containerPoint.y;
+      const radius = this._scaleRadius(this._map.getZoom());
+      const hitR2 = radius * radius;
+      let found = null;
+      for (const origin of this._origins) {
+        const p = this._map.latLngToContainerPoint([origin.lat, origin.lng]);
+        const dx = p.x - x;
+        const dy = p.y - y;
+        if (dx * dx + dy * dy <= hitR2) {
+          found = origin;
+          break;
+        }
+      }
+      if (found) {
+        this.fire('originclick', { origin: found, event: e });
       }
     },
   });
