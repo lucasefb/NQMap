@@ -1,5 +1,8 @@
 import Supercluster from 'supercluster';
 import RBush from 'rbush';
+import fs from 'fs';
+import path from 'path';
+
 
 export function generateAllCellsArray(cachedData) {
   return [
@@ -139,6 +142,73 @@ export function buildReclamosSupercluster(reclamosNormalizados) {
     clustersByTipo[tipo] = { supercluster, rtree: rtrees[tipo] };
   });
   return clustersByTipo;
+}
+
+export function processReclamos(cachedData, reclamosRows, accionesRows) {
+  try {
+    cachedData.reclamosCalidad  = reclamosRows;
+    cachedData.reclamosAcciones = accionesRows;
+
+    const accionesPorId = {};
+    for (const row of accionesRows) {
+      const id = String(row[0]).trim();
+      (accionesPorId[id] ||= []).push({
+        estado: row[3] || 'SIN DATO',
+        tipo_tarea: row[4] || 'SIN DATO',
+      });
+    }
+
+    const reclamosNorm = reclamosRows
+      .map(r => {
+        const lat = parseFloat(String(r[3]).replace(',', '.'));
+        const lng = parseFloat(String(r[4]).replace(',', '.'));
+        if (isNaN(lat) || isNaN(lng)) return null;
+        const id = String(r[0]).trim();
+        return {
+          lat,
+          lng,
+          tipo: (r[8] || '').toUpperCase(),
+          ID: r[0],
+          ESTADO: r[1],
+          RECLAMANTE: r[2],
+          LATITUD: lat,
+          LONGITUD: lng,
+          FECHA_CREACION: r[5],
+          FECHA_RECLAMO: r[6],
+          NOMBRE_REFERENCIAL: r[7],
+          TIPO_RECLAMO: r[8],
+          DESCRIPCION: r[9],
+          acciones: accionesPorId[id] || [],
+        };
+      })
+      .filter(Boolean);
+
+    cachedData.reclamosNormalizados = reclamosNorm;
+    cachedData.reclamosSuperCluster = buildReclamosSupercluster(reclamosNorm);
+    cachedData.reclamosReady = true;
+  } catch (e) {
+    console.error('❌ Error procesando reclamos:', e);
+  }
+}
+
+export async function loadCoverageOverlays(cachedData) {
+  try {
+    const overlaysFilePath = path.join(process.cwd(), 'extracted', 'coverage_overlays.json');
+
+    if (!fs.existsSync(overlaysFilePath)) {
+      console.warn('⚠️ Archivo de overlays no encontrado:', overlaysFilePath);
+      cachedData.coverageOverlays = [];
+      return;
+    }
+    const fileContent = fs.readFileSync(overlaysFilePath, 'utf-8');
+    const overlaysData = JSON.parse(fileContent);
+    cachedData.coverageOverlays = overlaysData;
+    cachedData.coverageOverlaysReady = true;
+    console.log(`✅ Cargados ${overlaysData.length} overlays de cobertura en cache`);
+  } catch (e) {
+    console.error('❌ Error cargando overlays de cobertura:', e);
+    cachedData.coverageOverlays = [];
+  }
 }
 
 export function getCellsByBoundsAndBands({

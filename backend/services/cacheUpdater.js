@@ -1,6 +1,6 @@
 import oracledb from 'oracledb';
-import fs from 'fs';
-import path from 'path';
+
+
 import { queries } from './queries.js';
 import {
   dbTableau,
@@ -15,7 +15,9 @@ import {
   generateAllCellsArray,
   buildCellsByNombre,
   buildSupercluster,
-  buildReclamosSupercluster,
+  processReclamos,
+  loadCoverageOverlays,
+
 } from './cacheUtils.js';
 
 export const cachedData = {
@@ -88,6 +90,9 @@ export async function updateCache() {
       connRemedy.execute(q).then(r => [k, r.rows]),
     );
 
+    const reclamosCalidadPromise  = connRemedy.execute(queries.loadReclamosCalidad);
+    const reclamosAccionesPromise = connRemedy.execute(queries.loadReclamosAcciones);
+
     const bdaPromises = Object.entries(queries.sitios.bda).map(([k, q]) =>
       connAllCells.execute(q).then(r => [k, r.rows]),
     );
@@ -111,12 +116,22 @@ export async function updateCache() {
     }
 
     // 3. Esperar todo
-    const [planesRFRes, loadLTERes, preOriginRes, bdaRes, sitiosRes] = await Promise.all([
+    const [
+      planesRFRes,
+      loadLTERes,
+      preOriginRes,
+      bdaRes,
+      sitiosRes,
+      reclamosCalidadRes,
+      reclamosAccionesRes,
+    ] = await Promise.all([
       planesRFPromise,
       loadLTEPromise,
       Promise.all(preOriginPromises),
       Promise.all(bdaPromises),
       Promise.all(sitiosPromises),
+      reclamosCalidadPromise,
+      reclamosAccionesPromise,
     ]);
 
     // 4. Poblar cache
@@ -129,6 +144,9 @@ export async function updateCache() {
       if (!cachedData[tech]) cachedData[tech] = {};
       cachedData[tech][banda] = rows;
     }
+
+    // Procesar reclamos
+    processReclamos(cachedData, reclamosCalidadRes.rows, reclamosAccionesRes.rows);
 
     // 5. Post-procesamiento
     const bandasMap = { '700': 'banda700', '1900': 'banda1900', '2100': 'banda2100', '2600': 'banda2600' };
@@ -148,9 +166,7 @@ export async function updateCache() {
 
     // Cargar overlays de cobertura de forma síncrona
     console.log('🚀 Iniciando carga de overlays de cobertura...');
-    const startTime = Date.now();
-    await loadCoverageOverlays();
-    const endTime = Date.now();
+    await loadCoverageOverlays(cachedData);
 
     // Flags & timestamp
     cachedData.sitesReady      = true;
@@ -167,93 +183,6 @@ export async function updateCache() {
       if (c) try { await c.close(); } catch (_) {}
     }
   }
-
-  // Disparar carga de reclamos en segundo plano
-  loadReclamos();
 }
-
-async function loadReclamos() {
-  let conn;
-  try {
-    conn = await oracledb.getConnection(dbRemedy);
-    const [reclamosRes, accionesRes] = await Promise.all([
-      conn.execute(queries.loadReclamosCalidad),
-      conn.execute(queries.loadReclamosAcciones),
-    ]);
-
-    cachedData.reclamosCalidad   = reclamosRes.rows;
-    cachedData.reclamosAcciones  = accionesRes.rows;
-
-    // Acciones por reclamo
-    const accionesPorId = {};
-    for (const row of accionesRes.rows) {
-      const id = String(row[0]).trim();
-      (accionesPorId[id] ||= []).push({
-        estado: row[3] || 'SIN DATO',
-        tipo_tarea: row[4] || 'SIN DATO',
-      });
-    }
-
-    // Normalizar reclamos
-    const reclamosNorm = reclamosRes.rows
-      .map(r => {
-        const lat = parseFloat(String(r[3]).replace(',', '.'));
-        const lng = parseFloat(String(r[4]).replace(',', '.'));
-        if (isNaN(lat) || isNaN(lng)) return null;
-        const id = String(r[0]).trim();
-        return {
-          lat,
-          lng,
-          tipo: (r[8] || '').toUpperCase(),
-          ID: r[0],
-          ESTADO: r[1],
-          RECLAMANTE: r[2],
-          LATITUD: lat,
-          LONGITUD: lng,
-          FECHA_CREACION: r[5],
-          FECHA_RECLAMO: r[6],
-          NOMBRE_REFERENCIAL: r[7],
-          TIPO_RECLAMO: r[8],
-          DESCRIPCION: r[9],
-          acciones: accionesPorId[id] || [],
-        };
-      })
-      .filter(Boolean);
-
-    cachedData.reclamosNormalizados = reclamosNorm;
-    cachedData.reclamosSuperCluster = buildReclamosSupercluster(reclamosNorm);
-    cachedData.reclamosReady = true;
-
-    
-  } catch (e) {
-    console.error('❌ Error cargando reclamos:', e);
-  } finally {
-    if (conn) try { await conn.close(); } catch (_) {}
-  }
-}
-
-async function loadCoverageOverlays() {
-  try {
-    const overlaysFilePath = path.join(process.cwd(), 'extracted', 'coverage_overlays.json');
-
-    if (!fs.existsSync(overlaysFilePath)) {
-      console.warn('⚠️ Archivo de overlays no encontrado:', overlaysFilePath);
-      cachedData.coverageOverlays = [];
-      return;
-    }
-    
-    const fileContent = fs.readFileSync(overlaysFilePath, 'utf-8');
-    
-    const overlaysData = JSON.parse(fileContent);
-    cachedData.coverageOverlays = overlaysData;
-    cachedData.coverageOverlaysReady = true;
-    console.log(`✅ Cargados ${overlaysData.length} overlays de cobertura en cache`);
-    
-  } catch (e) {
-    console.error('❌ Error cargando overlays de cobertura:', e);
-    cachedData.coverageOverlays = [];
-  }
-}
-
 // Export default (compatibilidad)
 export default { updateCache, cachedData };
