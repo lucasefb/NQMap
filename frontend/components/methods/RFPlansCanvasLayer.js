@@ -43,6 +43,7 @@ export function createRFPlansCanvasLayer() {
       // Mouse interactions - escuchar en el mapa para que múltiples capas reciban el evento
       map.on('mousemove', this._onMouseMove, this);
       map.on('mouseout', this._onMouseLeave, this);
+      map.on('click', this._onClick, this);
 
       this._reset();
     },
@@ -53,6 +54,7 @@ export function createRFPlansCanvasLayer() {
       map.off('resize move zoom', this._reset, this);
       map.off('mousemove', this._onMouseMove, this);
       map.off('mouseout', this._onMouseLeave, this);
+      map.off('click', this._onClick, this);
     },
 
     _reset: function () {
@@ -127,7 +129,7 @@ export function createRFPlansCanvasLayer() {
       if (found) {
         if (this._hoveredPlan !== found) {
           this._hoveredPlan = found;
-          this.fire('planover', { plan: found });
+          this.fire('planover', { plan: found, event: e });
         }
       } else {
         if (this._hoveredPlan) {
@@ -141,6 +143,27 @@ export function createRFPlansCanvasLayer() {
       if (this._hoveredPlan) {
         this.fire('planout', { plan: this._hoveredPlan });
         this._hoveredPlan = null;
+      }
+    },
+    
+    _onClick: function(e) {
+      if (!e.containerPoint) return;
+      const x = e.containerPoint.x;
+      const y = e.containerPoint.y;
+      const radius = this._scaleRadius(this._map.getZoom());
+      const hitRadiusSq = radius * radius;
+      let found = null;
+      for (const plan of this._plans) {
+        const p = this._map.latLngToContainerPoint([plan.lat, plan.lng]);
+        const dx = p.x - x;
+        const dy = p.y - y;
+        if (dx * dx + dy * dy <= hitRadiusSq) {
+          found = plan;
+          break;
+        }
+      }
+      if (found) {
+        this.fire('planclick', { plan: found, event: e });
       }
     },
   });

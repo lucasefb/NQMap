@@ -27,6 +27,7 @@ export default {
       visible: false,
       side: 'left',
       tooltipTitle: '',
+      pinned: false,
     };
   },
   methods: {
@@ -60,6 +61,12 @@ export default {
       document.body.classList.remove('cursor-tooltip');
       document.removeEventListener('mousemove', this.updatePosition);
     },
+    pin() {
+      this.pinned = true;
+    },
+    unpin() {
+      this.pinned = false;
+    },
     updatePosition(ev) {
       const el = this.$refs.tooltipRoot;
       if (!el) return;
@@ -86,6 +93,35 @@ export default {
 
 
     },
+    // Abre un Leaflet Popup en un lat/lng con el mismo contenido del Tooltip
+    // Uso: this.$refs.tooltipRef.openPopupAt([lat, lng], mapInstance [, htmlOverride])
+    openPopupAt(latLng, map, htmlOverride = null) {
+      try {
+        if (!process.client || !window.L || !map || !latLng) return;
+        // Mientras el popup está abierto, ocultamos el tooltip flotante y lo marcamos como "fijado"
+        if (this.visible) this.hide();
+        const contentInner = htmlOverride !== null ? htmlOverride : this.tooltipContent;
+        const titleHtml = this.tooltipTitle ? `<div class="tooltip-title">${this.tooltipTitle}</div>` : '';
+        const contentHtml = `<div class="tooltip-content">${titleHtml}${contentInner}</div>`;
+        const popup = window.L.popup({
+          autoClose: true,
+          closeOnClick: true,
+          closeOnEscapeKey: true
+        })
+        .setLatLng(latLng)
+        .setContent(contentHtml)
+        .openOn(map);
+        this.pin();
+        // Desanclar al cerrar el popup
+        map.once('popupclose', () => {
+          this.unpin();
+        });
+        return popup;
+      } catch (e) {
+        // fallback: no-op
+        // console.error('[Tooltip] openPopupAt failed', e);
+      }
+    }
   },
 };
 </script>
@@ -95,8 +131,7 @@ export default {
 .bands-tooltip,
 .preorigin-tooltip,
 .rfplans-tooltip,
-.custom-tooltip,
-.leaflet-tooltip {
+.custom-tooltip {
   position: absolute;
   background: rgba(225, 232, 255, 0.65);
   backdrop-filter: blur(3px); 
@@ -132,6 +167,54 @@ export default {
 .cursor-tooltip,
 .cursor-tooltip * {
   cursor: pointer !important;
+}
+
+/* Leaflet Tooltip: unificar visual sin romper interactividad/posición */
+.leaflet-tooltip {
+  background: rgba(225, 232, 255, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border: 1px solid #bbb;
+  border-radius: 7px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  font-family: 'Rubik', sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 0; /* el relleno lo maneja .tooltip-content interna */
+}
+
+/* Popup Leaflet: unificar estilos con Tooltip */
+.leaflet-popup-content-wrapper {
+  background: rgba(225, 232, 255, 0.65);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border: 1px solid #bbb;
+  border-radius: 7px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  font-family: 'Rubik', sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 0; /* el padding lo maneja .leaflet-popup-content */
+  animation: scale-estreme 0.2s ease-out;
+}
+
+.leaflet-popup-tip {
+  background: rgba(225, 232, 255, 0.65);
+  border: 1px solid #bbb;
+}
+
+/* Contenido del popup: replicar .tooltip-content */
+.leaflet-popup-content {
+  margin: 0; /* quitar margen por defecto de Leaflet */
+  padding: 10px 14px;
+  color: #222;
+  background: transparent;
+}
+
+/* Botón de cierre del popup: estilo sutil */
+.leaflet-container a.leaflet-popup-close-button {
+  color: #444;
+  font-weight: 600;
 }
 
 @keyframes scale-estreme {

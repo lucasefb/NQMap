@@ -34,7 +34,8 @@ export default {
   data() {
     return {
       canvasLayer: null,
-      isInitialized: false
+      isInitialized: false,
+      activePopupKey: null
     };
   },
   
@@ -69,11 +70,14 @@ export default {
   },
   
   methods: {
-    showTooltip(marker, ev) {
-      const html = `
+    buildBandKey(marker) {
+      return [marker.nombre, marker.lat, marker.lng, marker.azimuth, marker.tecnologia, marker.banda].join('|');
+    },
+    buildBandHtml(marker) {
+      return `
         <div>
           <ul style=list-style-type:none>
-            <li><strong>Banda:</strong> ${marker.nombre}</li>
+            <li><strong>Celda:</strong> ${marker.nombre}</li>
             <li><strong>Latitud:</strong> ${marker.lat}</li>
             <li><strong>Longitud:</strong> ${marker.lng}</li>
             <li><strong>Banda:</strong> ${marker.banda}</li>
@@ -85,12 +89,30 @@ export default {
             <li><strong>PRB:</strong> ${marker.prb}</li>
           </ul>
         </div>`;
+    },
+    showTooltip(marker, ev) {
+      // No mostrar tooltip si el popup de este mismo elemento está activo
+      const key = this.buildBandKey(marker);
+      if (this.activePopupKey && this.activePopupKey === key) return;
+      const html = this.buildBandHtml(marker);
       this.$refs.tooltipRef?.show(html, ev);
     },
-    hideTooltip() {
-      if (!this.$refs.tooltipRef?.pinned) {
-        this.$refs.tooltipRef?.hide();
+    openPopupForBand(marker) {
+      if (!this.mapInstance) return;
+      const html = this.buildBandHtml(marker);
+      // Guardar clave del elemento cuyo popup está activo
+      this.activePopupKey = this.buildBandKey(marker);
+      const popup = this.$refs.tooltipRef?.openPopupAt([marker.lat, marker.lng], this.mapInstance, html);
+      // Limpiar clave sólo cuando este popup específico se cierra
+      if (popup && popup.once) {
+        popup.once('remove', () => {
+          this.activePopupKey = null;
+        });
       }
+    },
+    hideTooltip() {
+      // Siempre ocultar el tooltip al salir, incluso si hay un popup activo
+      this.$refs.tooltipRef?.hide();
     },
     async initialize() {
       // Solo inicializamos una vez
@@ -120,8 +142,11 @@ export default {
         // Eventos
         this.canvasLayer.on('bandover', (e) => {
           if (this.$refs.tooltipRef) {
-            this.showTooltip(e.band);
+            this.showTooltip(e.band, e.originalEvent);
           }
+        });
+        this.canvasLayer.on('bandclick', (e) => {
+          this.openPopupForBand(e.band);
         });
         
         this.canvasLayer.on('bandout', () => {

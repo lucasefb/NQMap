@@ -9,34 +9,38 @@
             :icon="iconFor(group.markers[0])"
           >
             <l-popup :autoClose="false" :closeOnEscapeKey="true" :closeOnClick="false">
-              <div v-for="m in group.markers" :key="m.ID || m.id" class="reclamo-copy" style="min-width:220px;">
-                <b>{{ m.tipo || m.TIPO_RECLAMO }}</b><br>
+              <div class="tooltip-content">
+                <div v-for="m in group.markers" :key="m.ID || m.id" class="reclamo-copy" style="min-width:220px;">
+                  <b>{{ m.tipo || m.TIPO_RECLAMO }}</b><br>
 
-                <span>ESTADO:</span> {{ m.ESTADO || m.estado }}<br>
-                <span>LAT/LON:</span> {{ m.lat || m.LATITUD }}, {{ m.lng || m.LONGITUD }}<br>
-                <span>NOMBRE_REF:</span> {{ m.NOMBRE_REFERENCIAL || m.nombre_ref }}<br>
-                <button @click="openAcciones(m)" style="margin-top:6px;">Ver acciones</button>
-                <hr v-if="group.markers.length > 1" />
+                  <span>ESTADO:</span> {{ m.ESTADO || m.estado }}<br>
+                  <span>LAT/LON:</span> {{ m.lat || m.LATITUD }}, {{ m.lng || m.LONGITUD }}<br>
+                  <span>NOMBRE_REF:</span> {{ m.NOMBRE_REFERENCIAL || m.nombre_ref }}<br>
+                  <button @click="openAcciones(m)" style="margin-top:6px;">Ver acciones</button>
+                  <hr v-if="group.markers.length > 1" />
+                </div>
               </div>
             </l-popup>
             <l-tooltip v-if="$parent.zoom >= 14" :direction="'top'" :interactive="true">
-              <div v-for="m in group.markers" :key="m.ID || m.id" class="reclamo-copy">
-                <b>{{ m.tipo || m.TIPO_RECLAMO }}</b><br>
-                <span>ESTADO:</span> {{ m.ESTADO || m.estado }}<br>
-                <span>LAT/LON:</span> {{ m.lat || m.LATITUD }}, {{ m.lng || m.LONGITUD }}<br>
-                <span>NOMBRE_REF:</span> {{ m.NOMBRE_REFERENCIAL || m.nombre_ref }}<br>
-                <template v-if="m.acciones && m.acciones.length">
-                  <div style="margin-top:2px;">
-                    <span>Acciones:</span>
-                    <ul style="padding-left:14px;">
-                      <li v-for="(a, idx) in m.acciones" :key="(a.ID_RECLAMO || m.ID || m.id) + '-' + (a.TIPO_TAREA || a.tipo_tarea || idx)">
-                        <span>Estado:</span> {{ a.ESTADO || a.estado }}<br>
-                        <span>Tarea:</span> {{ a.TIPO_TAREA || a.tipo_tarea }}
-                      </li>
-                    </ul>
-                  </div>
-                </template>
-                <hr v-if="group.markers.length > 1" />
+              <div class="tooltip-content">
+                <div v-for="m in group.markers" :key="m.ID || m.id" class="reclamo-copy">
+                  <b>{{ m.tipo || m.TIPO_RECLAMO }}</b><br>
+                  <span>ESTADO:</span> {{ m.ESTADO || m.estado }}<br>
+                  <span>LAT/LON:</span> {{ m.lat || m.LATITUD }}, {{ m.lng || m.LONGITUD }}<br>
+                  <span>NOMBRE_REF:</span> {{ m.NOMBRE_REFERENCIAL || m.nombre_ref }}<br>
+                  <template v-if="m.acciones && m.acciones.length">
+                    <div style="margin-top:2px;">
+                      <span>Acciones:</span>
+                      <ul style="padding-left:14px;">
+                        <li v-for="(a, idx) in m.acciones" :key="(a.ID_RECLAMO || m.ID || m.id) + '-' + (a.TIPO_TAREA || a.tipo_tarea || idx)">
+                          <span>Estado:</span> {{ a.ESTADO || a.estado }}<br>
+                          <span>Tarea:</span> {{ a.TIPO_TAREA || a.tipo_tarea }}
+                        </li>
+                      </ul>
+                    </div>
+                  </template>
+                  <hr v-if="group.markers.length > 1" />
+                </div>
               </div>
             </l-tooltip>
           </l-marker>

@@ -4,7 +4,7 @@
       :key="marker.isCluster ? `cluster_${marker.cluster_id}_${marker.solution}` : `site_${marker.nombre}_${marker.lat}_${marker.lng}_${marker.solution}`"
       :lat-lng="[marker.lat, marker.lng]" :icon="cellidIcon(marker)" @click="handleClick(marker)">
       <l-popup v-if="!marker.isCluster">
-        {{ marker.nombre }}
+        <div class="tooltip-content">{{ marker.nombre }}</div>
       </l-popup>
     </l-marker>
   </div>

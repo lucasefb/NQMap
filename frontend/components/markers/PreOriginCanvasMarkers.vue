@@ -18,7 +18,8 @@ export default {
   data() {
     return {
       canvasLayer: null,
-      isInitialized: false
+      isInitialized: false,
+      activePopupKey: null
     };
   },
   computed: {
@@ -32,9 +33,11 @@ export default {
     markers(m) { if (this.canvasLayer) this.canvasLayer.setOrigins(m); }
   },
   methods: {
-    showTooltip(origin, ev) {
-      const marker = origin;
-      const html = `
+    buildOriginKey(marker) {
+      return [marker.tipo, marker.sitio, marker.lat, marker.lng, marker.fecha].join('|');
+    },
+    buildOriginHtml(marker) {
+      return `
         <div class="preorigin-tooltip-inner">
           <div><b>Tipo:</b> ${marker.tipo || ''}</div>
           <div><b>Sitio:</b> ${marker.sitio || ''}</div>
@@ -48,13 +51,25 @@ export default {
             return `${d}/${m}/${y}`;
           })()}</div>
         </div>`;
+    },
+    showTooltip(origin, ev) {
+      const key = this.buildOriginKey(origin);
+      if (this.activePopupKey && this.activePopupKey === key) return;
+      const html = this.buildOriginHtml(origin);
       this.$refs.tooltipRef?.show(html, ev);
-      this.$refs.tooltipRef?.pin();
+    },
+    openPopupForOrigin(origin) {
+      if (!this.mapInstance) return;
+      const html = this.buildOriginHtml(origin);
+      this.activePopupKey = this.buildOriginKey(origin);
+      this.$refs.tooltipRef?.openPopupAt([origin.lat, origin.lng], this.mapInstance, html);
+      this.mapInstance.once('popupclose', () => {
+        this.activePopupKey = null;
+      });
     },
     hideTooltip() {
-      if (!this.$refs.tooltipRef?.pinned) {
-        this.$refs.tooltipRef?.hide();
-      }
+      // Siempre ocultar el tooltip al salir, incluso si hay un popup activo
+      this.$refs.tooltipRef?.hide();
     },
     async initialize() {
       if (this.isInitialized || !process.client) return;
@@ -66,6 +81,7 @@ export default {
         this.canvasLayer = new Cls();
         this.canvasLayer.on('originover', e => this.showTooltip(e.origin, e.event));
         this.canvasLayer.on('originout', () => this.hideTooltip());
+        this.canvasLayer.on('originclick', e => this.openPopupForOrigin(e.origin));
         this.mapInstance.addLayer(this.canvasLayer);
         this.canvasLayer.setOrigins(this.markers);
         this.isInitialized = true;

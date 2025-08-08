@@ -13,7 +13,8 @@ export default {
   data() {
     return {
       layer: null,
-      tooltipEl: null
+      tooltipEl: null,
+      activePopupKey: null
     };
   },
   watch: {
@@ -79,8 +80,13 @@ export default {
         this.mapInstance.getContainer().appendChild(this.tooltipEl);
       }
     },
+    buildGroupKey(group) {
+      return `${group.lat},${group.lng}|${(group.markers && group.markers.length) || 0}`;
+    },
     showTooltip(group) {
       if (this.zoom < 14) return;
+      const key = this.buildGroupKey(group);
+      if (this.activePopupKey && this.activePopupKey === key) return;
       this.ensureTooltipEl();
       this.tooltipEl.innerHTML = group.markers.map(m => this.tooltipHtml(m, group.markers.length > 1)).join('');
       const p = this.mapInstance.latLngToContainerPoint([group.lat, group.lng]);
@@ -105,8 +111,12 @@ export default {
     },
     openPopup(group) {
       if (!process.client) return;
-      const content = group.markers.map(m => this.tooltipHtml(m, group.markers.length > 1)).join('');
-      const popup = L.popup({ autoClose: false, closeOnClick: false })
+      // Ocultar tooltip flotante si está visible para este grupo
+      this.hideTooltip();
+      const contentInner = group.markers.map(m => this.tooltipHtml(m, group.markers.length > 1)).join('');
+      const content = `<div class="tooltip-content">${contentInner}</div>`;
+      this.activePopupKey = this.buildGroupKey(group);
+      const popup = L.popup({ autoClose: true, closeOnClick: true, closeOnEscapeKey: true })
         .setLatLng([group.lat, group.lng])
         .setContent(content);
       popup.on('add', () => {
@@ -119,7 +129,12 @@ export default {
           }
         });
       });
-      this.mapInstance.openPopup(popup);
+      popup.openOn(this.mapInstance);
+      if (popup && popup.once) {
+        popup.once('remove', () => {
+          this.activePopupKey = null;
+        });
+      }
     }
   }
 };
